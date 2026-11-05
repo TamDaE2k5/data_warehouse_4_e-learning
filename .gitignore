@@ -1,0 +1,44 @@
+# ==============================================================================
+# HỒ SƠ LOẠI TRỪ DỮ LIỆU & FILE CÁ NHÂN KHỎI GIT (GITIGNORE)
+# ==============================================================================
+
+# 1. BIẾN MÔI TRƯỜNG & BÍ MẬT BẢO MẬT (TUYỆT ĐỐI KHÔNG COMMIT VÀO GIT)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# 2. FILE TẠM VÀ CACHE CỦA TRÌNH THÔNG DỊCH PYTHON
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# 3. MÔI TRƯỜNG ẢO PYTHON (VIRTUAL ENVIRONMENTS)
+venv/
+.venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# 4. KẾT QUẢ VẬN HÀNH & LOGS HỆ THỐNG PHÁT SINH TRONG KHI CHẠY PIPELINE
+artifacts/
+*.log
+.coverage
+htmlcov/
+
+# 5. DỮ LIỆU CỤM CONTAINER DOCKER & HỆ ĐIỀU HÀNH
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# 6. FILE TÀI LIỆU KẾ HOẠCH NỘI BỘ (NẾU CẦN ẨN)
+rebuild_plan.md

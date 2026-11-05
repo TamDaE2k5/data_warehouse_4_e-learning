@@ -1,0 +1,28 @@
+# ==============================================================================
+# DANH MỤC CÁC THƯ VIỆN PYTHON PHỤ THUỘC (PYTHON CORE DEPENDENCIES)
+# ==============================================================================
+
+# 1. TÍNH TOÁN KHOA HỌC & VECTOR HÓA DỮ LIỆU TỐC ĐỘ CAO (HIGH-PERFORMANCE NUMERICS)
+# Dùng để sinh mảng dữ liệu giả lập phân phối ngẫu nhiên (np.random.default_rng)
+# và tính toán vector hóa nhanh hơn hàng trăm lần so với vòng lặp Python thuần.
+numpy==2.2.1
+
+# 2. XỬ LÝ DỮ LIỆU DẠNG BẢNG & ĐỆM CHUYỂN ĐỔI (DATA WRANGLING & BUFFERING)
+# Dùng DataFrame để tổ chức dữ liệu dạng bảng trước khi nạp hàng loạt (Bulk Ingestion)
+# thông qua giao thức PostgreSQL COPY FROM STDIN.
+pandas==2.2.3
+
+# 3. SINH DỮ LIỆU GIẢ LẬP ĐẬM CHẤT BẢN ĐỊA HÓA (LOCALIZED SYNTHETIC DATA GENERATOR)
+# Hỗ trợ gói ngôn ngữ tiếng Việt ('vi_VN') để sinh họ tên thật (Nguyễn, Trần, Lê...),
+# địa chỉ email và địa danh các tỉnh thành Việt Nam (Hà Nội, TP.HCM, Đà Nẵng, Cần Thơ).
+Faker==33.1.0
+
+# 4. KẾT NỐI VÀ ĐIỀU PHỐI POSTGRESQL NATIVE (POSTGRESQL DATABASE ADAPTER)
+# Bản dựng binary tối ưu hóa bằng ngôn ngữ C, hỗ trợ Server-side Named Cursors để
+# đọc dữ liệu hàng triệu dòng theo từng lô (Batching) mà không bị tràn bộ nhớ RAM (OOM).
+psycopg2-binary==2.9.10
+
+# 5. KẾT NỐI VÀ ĐẨY DỮ LIỆU SANG CLICKHOUSE (OFFICIAL CLICKHOUSE PYTHON DRIVER)
+# Driver chính thức của ClickHouse hỗ trợ giao thức HTTP nén dữ liệu LZ4/Zstandard,
+# đọc ghi siêu tốc trực tiếp vào các bảng Fact và Dimension tầng Gold.
+clickhouse-connect==0.8.11
