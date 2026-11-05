@@ -1,0 +1,39 @@
+<!-- ==============================================================================
+     TẬP TIN CẤU HÌNH TÀI NGUYÊN VÀ HIỆU NĂNG CHO CLICKHOUSE SERVER (RESOURCES.XML)
+     ==============================================================================
+     Mục đích:
+     Được mount vào '/etc/clickhouse-server/config.d/resources.xml' để tinh chỉnh
+     các thông số bộ nhớ RAM, số luồng xử lý ngầm và bộ đệm chỉ mục cho ClickHouse.
+     ============================================================================== -->
+<clickhouse>
+    <!-- 1. GIỚI HẠN BỘ NHỚ RAM TỐI ĐA CHO MÁY CHỦ CLICKHOUSE: 2.6 GB
+         Giúp ClickHouse tự động điều tiết bộ nhớ khi xử lý các câu truy vấn phức tạp (CUBE, JOIN),
+         ngăn chặn tiến trình Linux OOM-Killer đột ngột tắt container. -->
+    <max_server_memory_usage>2600000000</max_server_memory_usage>
+
+    <!-- 2. SỐ LƯỢNG LUỒNG XỬ LÝ NỀN DÀNH CHO QUÁ TRÌNH GỘP (BACKGROUND MERGES): 8 LUỒNG
+         ClickHouse sử dụng động cơ MergeTree, dữ liệu được ghi thành từng Part nhỏ và liên tục
+         được gộp lại ở chế độ nền. 8 luồng giúp quá trình nén và khử trùng lặp (ReplacingMergeTree)
+         diễn ra thần tốc. -->
+    <background_pool_size>8</background_pool_size>
+
+    <!-- 3. TỶ LỆ ĐỒNG THỜI DÀNH CHO CÁC THAO TÁC BIẾN ĐỔI DỮ LIỆU NỀN (CONCURRENCY RATIO): 4 -->
+    <background_merges_mutations_concurrency_ratio>4</background_merges_mutations_concurrency_ratio>
+
+    <!-- 4. DUNG LƯỢNG BỘ ĐỆM ĐÁNH DẤU CHỈ MỤC CỘT (MARK CACHE SIZE): 128 MB (134,217,728 bytes)
+         Chỉ mục Sparse Index của ClickHouse dùng các "Marks" để nhảy cóc dữ liệu khi tìm kiếm.
+         Đưa 128MB Marks vào RAM giúp các câu truy vấn GROUP BY phản hồi trong vài mili-giây. -->
+    <mark_cache_size>134217728</mark_cache_size>
+
+    <!-- 5. TẮT BỘ ĐỆM GIẢI NÉN (UNCOMPRESSED CACHE)
+         Do ClickHouse đọc dữ liệu nén trực tiếp vào CPU cache cực nhanh, việc tắt cache giải nén
+         giúp tiết kiệm RAM dành cho các phép toán tổng hợp lớn. -->
+    <uncompressed_cache_size>0</uncompressed_cache_size>
+
+    <!-- 6. CẤU HÌNH GHI NHẬT KÝ (LOGGING)
+         Chỉ ghi log ở mức WARNING trở lên ra Console để tránh làm rác màn hình Terminal. -->
+    <logger>
+        <level>warning</level>
+        <console>true</console>
+    </logger>
+</clickhouse>

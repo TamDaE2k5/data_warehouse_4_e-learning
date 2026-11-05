@@ -1,0 +1,140 @@
+# ==============================================================================
+# HỒ SƠ ĐIỀU PHỐI DỊCH VỤ DOCKER COMPOSE (DATA WAREHOUSE ORCHESTRATION)
+# ==============================================================================
+# Kiến trúc bao gồm 4 dịch vụ độc lập:
+#   1. postgres:   Hệ quản trị CSDL quan hệ lưu trữ dữ liệu Tác nghiệp (OLTP) & Staging
+#   2. clickhouse: Hệ quản trị CSDL cột tốc độ cao lưu trữ Kho dữ liệu đa chiều (Gold DW)
+#   3. runner:     Môi trường Python 3.12 thực thi các lệnh CLI, ETL và Benchmark
+#   4. dashboard:  Giao diện trực quan hóa dữ liệu kinh doanh xây dựng bằng Streamlit
+# ==============================================================================
+
+name: online-learning-dw
+
+services:
+  # ----------------------------------------------------------------------------
+  # DỊCH VỤ 1: POSTGRESQL (CƠ SỞ DỮ LIỆU TÁC NGHIỆP & VÙNG ĐỆM STAGING)
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16.6-bookworm
+    environment:
+      POSTGRES_DB: learning_oltp
+      POSTGRES_USER: learning
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-local_learning_demo}
+      TZ: UTC
+    ports:
+      # Ánh xạ ra cổng ngoài 55432 để tránh xung đột với cổng 5432 mặc định của máy host
+      - "127.0.0.1:${PG_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Tự động chạy script tạo thêm database dwh_staging khi container khởi động lần đầu
+      - ./docker/init-databases.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
+    # Bộ nhớ dùng chung (Shared Memory) bắt buộc phải tăng lên 256MB để hỗ trợ truy vấn song song
+    shm_size: 256mb
+    mem_limit: 2g
+    cpus: 4
+    # Tinh chỉnh thông số hiệu năng chuyên sâu cho bài toán xử lý dữ liệu lớn (Bulk Processing):
+    # - shared_buffers=256MB: Bộ đệm RAM lưu trữ các trang dữ liệu thường xuyên truy cập
+    # - work_mem=32MB: Bộ nhớ dành riêng cho mỗi phép toán SORT và HASH JOIN phức tạp
+    # - max_parallel_workers_per_gather=3: Tận dụng tối đa 3 CPU worker chạy song song mỗi query
+    command: [
+      "postgres",
+      "-c", "shared_buffers=256MB",
+      "-c", "work_mem=32MB",
+      "-c", "max_parallel_workers_per_gather=3"
+    ]
+    # Kiểm tra trạng thái sống: Chỉ báo 'healthy' khi Postgres đã sẵn sàng tiếp nhận kết nối
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U learning -d postgres || pg_isready -U learning -d learning_oltp"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # ----------------------------------------------------------------------------
+  # DỊCH VỤ 2: CLICKHOUSE SERVER (KHO DỮ LIỆU ĐA CHIỀU OLAP HIỆU NĂNG CAO)
+  # ----------------------------------------------------------------------------
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8.14.39
+    environment:
+      CLICKHOUSE_USER: learning
+      CLICKHOUSE_PASSWORD: ${CH_PASSWORD:-local_learning_demo}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      TZ: UTC
+    ports:
+      # Cổng giao thức HTTP dành cho Python Client kết nối truy vấn
+      - "127.0.0.1:${CH_PORT:-58123}:8123"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      # Mount file cấu hình tối ưu bộ nhớ RAM và số luồng xử lý nền
+      - ./docker/clickhouse.xml:/etc/clickhouse-server/config.d/resources.xml:ro
+    mem_limit: 3g
+    cpus: 4
+    # Mở rộng giới hạn File Descriptors (nofile) để ClickHouse thoải mái nạp hàng ngàn file cột nén
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    # Kiểm tra trạng thái sống qua câu lệnh truy vấn nội tại
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --user learning --password \"$$CLICKHOUSE_PASSWORD\" --query 'SELECT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # ----------------------------------------------------------------------------
+  # DỊCH VỤ 3: RUNNER CONTAINER (MÔI TRƯỜNG THỰC THI PIPELINE VÀ CLI)
+  # ----------------------------------------------------------------------------
+  runner:
+    image: online-learning-dw-runner:latest
+    build: .
+    profiles: ["tools"]
+    working_dir: /app
+    volumes:
+      # Mount toàn bộ mã nguồn hiện tại vào /app để sửa code bên ngoài có tác dụng ngay
+      - .:/app
+    environment: &runner_env
+      PGHOST: postgres
+      PGDATABASE: learning_oltp
+      PGUSER: learning
+      PGPASSWORD: ${PG_PASSWORD:-local_learning_demo}
+      PG_READER_PASSWORD: ${PG_READER_PASSWORD:-local_reader_demo}
+      PG_STAGE_PASSWORD: ${PG_STAGE_PASSWORD:-local_staging_demo}
+      CH_HOST: clickhouse
+      CH_USER: learning
+      CH_PASSWORD: ${CH_PASSWORD:-local_learning_demo}
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: 1
+      TZ: UTC
+    mem_limit: 1500m
+    cpus: 4
+    # Chờ cho cả 2 máy chủ CSDL thực sự 'healthy' rồi mới kích hoạt Runner
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    command: ["python", "cli.py", "--help"]
+
+  # ----------------------------------------------------------------------------
+  # DỊCH VỤ 4: DASHBOARD PORTAL (GIAO DIỆN WEB TRỰC QUAN HÓA DỮ LIỆU STREAMLIT)
+  # ----------------------------------------------------------------------------
+  dashboard:
+    build:
+      context: .
+      dockerfile: demo/Dockerfile
+    profiles: ["demo"]
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      <<: *runner_env
+      PYTHONPATH: /app
+    ports:
+      - "127.0.0.1:${PORTAL_PORT:-8501}:8501"
+    command: ["streamlit", "run", "demo/app.py", "--server.address=0.0.0.0", "--server.headless=true"]
+
+# ------------------------------------------------------------------------------
+# VOLUMES DỮ LIỆU LƯU TRỮ VĨNH VIỄN TRÊN Ổ CỨNG (DOCKER PERSISTENT STORAGE)
+# ------------------------------------------------------------------------------
+volumes:
+  postgres_data:
+  clickhouse_data:
