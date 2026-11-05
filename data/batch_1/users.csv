@@ -1,0 +1,101 @@
+user_id,full_name,email,city,country,created_at
+50001,Học viên Mẫu 50001,student_50001@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50002,Học viên Mẫu 50002,student_50002@example.com,Da Nang,VN,2024-01-01 08:00:00
+50003,Học viên Mẫu 50003,student_50003@example.com,Can Tho,VN,2024-01-01 08:00:00
+50004,Học viên Mẫu 50004,student_50004@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50005,Học viên Mẫu 50005,student_50005@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50006,Học viên Mẫu 50006,student_50006@example.com,Da Nang,VN,2024-01-01 08:00:00
+50007,Học viên Mẫu 50007,student_50007@example.com,Can Tho,VN,2024-01-01 08:00:00
+50008,Học viên Mẫu 50008,student_50008@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50009,Học viên Mẫu 50009,student_50009@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50010,Học viên Mẫu 50010,student_50010@example.com,Da Nang,VN,2024-01-01 08:00:00
+50011,Học viên Mẫu 50011,student_50011@example.com,Can Tho,VN,2024-01-01 08:00:00
+50012,Học viên Mẫu 50012,student_50012@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50013,Học viên Mẫu 50013,student_50013@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50014,Học viên Mẫu 50014,student_50014@example.com,Da Nang,VN,2024-01-01 08:00:00
+50015,Học viên Mẫu 50015,student_50015@example.com,Can Tho,VN,2024-01-01 08:00:00
+50016,Học viên Mẫu 50016,student_50016@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50017,Học viên Mẫu 50017,student_50017@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50018,Học viên Mẫu 50018,student_50018@example.com,Da Nang,VN,2024-01-01 08:00:00
+50019,Học viên Mẫu 50019,student_50019@example.com,Can Tho,VN,2024-01-01 08:00:00
+50020,Học viên Mẫu 50020,student_50020@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50021,Học viên Mẫu 50021,student_50021@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50022,Học viên Mẫu 50022,student_50022@example.com,Da Nang,VN,2024-01-01 08:00:00
+50023,Học viên Mẫu 50023,student_50023@example.com,Can Tho,VN,2024-01-01 08:00:00
+50024,Học viên Mẫu 50024,student_50024@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50025,Học viên Mẫu 50025,student_50025@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50026,Học viên Mẫu 50026,student_50026@example.com,Da Nang,VN,2024-01-01 08:00:00
+50027,Học viên Mẫu 50027,student_50027@example.com,Can Tho,VN,2024-01-01 08:00:00
+50028,Học viên Mẫu 50028,student_50028@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50029,Học viên Mẫu 50029,student_50029@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50030,Học viên Mẫu 50030,student_50030@example.com,Da Nang,VN,2024-01-01 08:00:00
+50031,Học viên Mẫu 50031,student_50031@example.com,Can Tho,VN,2024-01-01 08:00:00
+50032,Học viên Mẫu 50032,student_50032@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50033,Học viên Mẫu 50033,student_50033@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50034,Học viên Mẫu 50034,student_50034@example.com,Da Nang,VN,2024-01-01 08:00:00
+50035,Học viên Mẫu 50035,student_50035@example.com,Can Tho,VN,2024-01-01 08:00:00
+50036,Học viên Mẫu 50036,student_50036@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50037,Học viên Mẫu 50037,student_50037@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50038,Học viên Mẫu 50038,student_50038@example.com,Da Nang,VN,2024-01-01 08:00:00
+50039,Học viên Mẫu 50039,student_50039@example.com,Can Tho,VN,2024-01-01 08:00:00
+50040,Học viên Mẫu 50040,student_50040@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50041,Học viên Mẫu 50041,student_50041@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50042,Học viên Mẫu 50042,student_50042@example.com,Da Nang,VN,2024-01-01 08:00:00
+50043,Học viên Mẫu 50043,student_50043@example.com,Can Tho,VN,2024-01-01 08:00:00
+50044,Học viên Mẫu 50044,student_50044@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50045,Học viên Mẫu 50045,student_50045@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50046,Học viên Mẫu 50046,student_50046@example.com,Da Nang,VN,2024-01-01 08:00:00
+50047,Học viên Mẫu 50047,student_50047@example.com,Can Tho,VN,2024-01-01 08:00:00
+50048,Học viên Mẫu 50048,student_50048@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50049,Học viên Mẫu 50049,student_50049@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50050,Học viên Mẫu 50050,student_50050@example.com,Da Nang,VN,2024-01-01 08:00:00
+50051,Học viên Mẫu 50051,student_50051@example.com,Can Tho,VN,2024-01-01 08:00:00
+50052,Học viên Mẫu 50052,student_50052@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50053,Học viên Mẫu 50053,student_50053@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50054,Học viên Mẫu 50054,student_50054@example.com,Da Nang,VN,2024-01-01 08:00:00
+50055,Học viên Mẫu 50055,student_50055@example.com,Can Tho,VN,2024-01-01 08:00:00
+50056,Học viên Mẫu 50056,student_50056@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50057,Học viên Mẫu 50057,student_50057@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50058,Học viên Mẫu 50058,student_50058@example.com,Da Nang,VN,2024-01-01 08:00:00
+50059,Học viên Mẫu 50059,student_50059@example.com,Can Tho,VN,2024-01-01 08:00:00
+50060,Học viên Mẫu 50060,student_50060@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50061,Học viên Mẫu 50061,student_50061@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50062,Học viên Mẫu 50062,student_50062@example.com,Da Nang,VN,2024-01-01 08:00:00
+50063,Học viên Mẫu 50063,student_50063@example.com,Can Tho,VN,2024-01-01 08:00:00
+50064,Học viên Mẫu 50064,student_50064@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50065,Học viên Mẫu 50065,student_50065@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50066,Học viên Mẫu 50066,student_50066@example.com,Da Nang,VN,2024-01-01 08:00:00
+50067,Học viên Mẫu 50067,student_50067@example.com,Can Tho,VN,2024-01-01 08:00:00
+50068,Học viên Mẫu 50068,student_50068@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50069,Học viên Mẫu 50069,student_50069@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50070,Học viên Mẫu 50070,student_50070@example.com,Da Nang,VN,2024-01-01 08:00:00
+50071,Học viên Mẫu 50071,student_50071@example.com,Can Tho,VN,2024-01-01 08:00:00
+50072,Học viên Mẫu 50072,student_50072@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50073,Học viên Mẫu 50073,student_50073@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50074,Học viên Mẫu 50074,student_50074@example.com,Da Nang,VN,2024-01-01 08:00:00
+50075,Học viên Mẫu 50075,student_50075@example.com,Can Tho,VN,2024-01-01 08:00:00
+50076,Học viên Mẫu 50076,student_50076@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50077,Học viên Mẫu 50077,student_50077@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50078,Học viên Mẫu 50078,student_50078@example.com,Da Nang,VN,2024-01-01 08:00:00
+50079,Học viên Mẫu 50079,student_50079@example.com,Can Tho,VN,2024-01-01 08:00:00
+50080,Học viên Mẫu 50080,student_50080@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50081,Học viên Mẫu 50081,student_50081@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50082,Học viên Mẫu 50082,student_50082@example.com,Da Nang,VN,2024-01-01 08:00:00
+50083,Học viên Mẫu 50083,student_50083@example.com,Can Tho,VN,2024-01-01 08:00:00
+50084,Học viên Mẫu 50084,student_50084@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50085,Học viên Mẫu 50085,student_50085@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50086,Học viên Mẫu 50086,student_50086@example.com,Da Nang,VN,2024-01-01 08:00:00
+50087,Học viên Mẫu 50087,student_50087@example.com,Can Tho,VN,2024-01-01 08:00:00
+50088,Học viên Mẫu 50088,student_50088@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50089,Học viên Mẫu 50089,student_50089@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50090,Học viên Mẫu 50090,student_50090@example.com,Da Nang,VN,2024-01-01 08:00:00
+50091,Học viên Mẫu 50091,student_50091@example.com,Can Tho,VN,2024-01-01 08:00:00
+50092,Học viên Mẫu 50092,student_50092@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50093,Học viên Mẫu 50093,student_50093@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50094,Học viên Mẫu 50094,student_50094@example.com,Da Nang,VN,2024-01-01 08:00:00
+50095,Học viên Mẫu 50095,student_50095@example.com,Can Tho,VN,2024-01-01 08:00:00
+50096,Học viên Mẫu 50096,student_50096@example.com,Ha Noi,VN,2024-01-01 08:00:00
+50097,Học viên Mẫu 50097,student_50097@example.com,Ho Chi Minh,VN,2024-01-01 08:00:00
+50098,Học viên Mẫu 50098,student_50098@example.com,Da Nang,VN,2024-01-01 08:00:00
+50099,Học viên Mẫu 50099,student_50099@example.com,Can Tho,VN,2024-01-01 08:00:00
+50100,Học viên Mẫu 50100,student_50100@example.com,Ha Noi,VN,2024-01-01 08:00:00
