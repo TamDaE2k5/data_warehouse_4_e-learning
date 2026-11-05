@@ -1,0 +1,23 @@
+# ==============================================================================
+# DANH MỤC PHIÊN BẢN KHÓA CHẶT (PINNED DEPENDENCIES LOCKFILE)
+# ==============================================================================
+# Mục đích:
+# Khóa chặt phiên bản chính xác đến từng thư viện phụ thuộc gián tiếp (Transitive Dependencies).
+# Đảm bảo tính tái lập (Reproducibility): Dù build image hôm nay hay 3 năm sau trên bất kỳ máy nào,
+# môi trường chạy luôn cài đặt đúng 100% phiên bản này, không bao giờ bị lỗi do thư viện mới tự động update.
+# ==============================================================================
+
+certifi==2026.7.22
+clickhouse-connect==0.8.11
+Faker==33.1.0
+lz4==4.4.5
+numpy==2.2.1
+pandas==2.2.3
+psycopg2-binary==2.9.10
+python-dateutil==2.9.0.post0
+pytz==2026.5
+six==1.17.0
+typing_extensions==4.16.0
+tzdata==2026.5
+urllib3==2.8.0
+zstandard==0.25.0

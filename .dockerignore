@@ -1,0 +1,22 @@
+# ==============================================================================
+# DANH MỤC CÁC TỆP LOẠI BỎ KHỎI DOCKER BUILD CONTEXT (.DOCKERIGNORE)
+# ==============================================================================
+# Giúp lệnh 'docker build' gửi context nhẹ nhàng qua Docker Daemon, tăng tốc độ build.
+
+# 1. File môi trường bí mật cá nhân
+.env
+.env.*
+
+# 2. Dữ liệu báo cáo và artifact sinh ra trong quá trình chạy
+artifacts/
+ket-qua-mau/
+
+# 3. Cache Python
+__pycache__/
+** roll/__pycache__
+*.pyc
+
+# 4. Thư mục quản lý phiên bản Git & Môi trường ảo
+.git/
+venv/
+.venv/
