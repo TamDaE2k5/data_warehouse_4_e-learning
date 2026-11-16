@@ -1,0 +1,8 @@
+{
+  "checked_on": "2026-11-11",
+  "scope": "Clean GitHub staging tree against the existing local synthetic warehouse",
+  "unit_integration_tests": 12,
+  "dashboard_checks": 13,
+  "status": "passed",
+  "note": "Full generation, full-load timing and large benchmark were not repeated for this publication. Their recorded results are dated 2026-11-10."
+}

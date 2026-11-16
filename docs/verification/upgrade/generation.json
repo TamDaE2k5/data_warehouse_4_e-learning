@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "seed": 2024,
+  "counts": {
+    "users": 500,
+    "user_history": 600,
+    "instructors": 100,
+    "courses": 1000,
+    "lessons": 10000,
+    "quizzes": 1000,
+    "payment_methods": 3,
+    "enrollments": 5000,
+    "payments": 5000,
+    "lesson_completions": 36000,
+    "quiz_attempts": 10000
+  },
+  "total_rows": 69203,
+  "seconds": 10.984,
+  "finished_at": "2026-11-15T01:49:32.854392+00:00",
+  "synthetic": true,
+  "period": [
+    "2022-01-01",
+    "2024-12-31"
+  ]
+}

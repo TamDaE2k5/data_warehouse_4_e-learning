@@ -1,0 +1,100 @@
+{
+  "status": "success",
+  "started_at": "2026-11-15T01:48:19.102383+00:00",
+  "project": "learning-dw-smoke-upgrade-final-20261115",
+  "enrollments": 5000,
+  "ports": {
+    "postgres": 50900,
+    "clickhouse_http": 50901,
+    "dashboard": 50902
+  },
+  "configured_limits": {
+    "cpu_quota": "2",
+    "PG_MEMORY_LIMIT": "2g",
+    "CH_MEMORY_LIMIT": "3g",
+    "RUNNER_MEMORY_LIMIT": "1500m",
+    "DASHBOARD_MEMORY_LIMIT": "1500m"
+  },
+  "scope": "fresh-volume isolated synthetic smoke; not production load or backup recovery",
+  "steps": [
+    {
+      "name": "docker-ready",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 0.205
+    },
+    {
+      "name": "compose-config",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 0.565
+    },
+    {
+      "name": "build",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 20.17
+    },
+    {
+      "name": "start",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 26.45
+    },
+    {
+      "name": "full-reports-benchmark",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 56.109
+    },
+    {
+      "name": "unit-integration",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 7.024
+    },
+    {
+      "name": "dashboard-offline-unit",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 12.02
+    },
+    {
+      "name": "failure-recovery",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 69.124
+    },
+    {
+      "name": "dashboard",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 14.445
+    },
+    {
+      "name": "doctor",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 3.738
+    },
+    {
+      "name": "service-logs",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 1.866
+    },
+    {
+      "name": "stop",
+      "status": "passed",
+      "returncode": 0,
+      "seconds": 5.345
+    }
+  ],
+  "finished_at": "2026-11-15T01:51:56.452421+00:00",
+  "seconds": 217.351,
+  "volumes_preserved": true,
+  "curation": {
+    "source_sha256": "44789ea21145808e24be6ff3371e6ecd201bc7a7274094effd6a05332c40fec6",
+    "omitted": "Per-step log paths; runtime logs are not included in this public evidence bundle."
+  }
+}

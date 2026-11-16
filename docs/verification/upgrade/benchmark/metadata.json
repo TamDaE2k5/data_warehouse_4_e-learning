@@ -1,0 +1,236 @@
+{
+  "status": "success",
+  "benchmark_run": "e134f4f34d004b99b6a1cbd6d5c8daba",
+  "measured_at": "2026-11-15T01:49:55.529654+00:00",
+  "pipeline_run": "3e69663b45de4fc5883192e87ad48ac6",
+  "warmup_runs": 2,
+  "measured_runs": 3,
+  "timing": "client wall-clock execute+fetch, serial; CH query cache disabled",
+  "cache_scope": "One untimed parity query plus configured warm-ups; caches are not flushed",
+  "postgres_version": "PostgreSQL 16.6 (Debian 16.6-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit",
+  "clickhouse_version": "24.8.14.39",
+  "python_version": "3.12.8",
+  "postgres_settings": [
+    [
+      "max_parallel_workers_per_gather",
+      "3",
+      null
+    ],
+    [
+      "shared_buffers",
+      "32768",
+      "8kB"
+    ],
+    [
+      "work_mem",
+      "32768",
+      "kB"
+    ]
+  ],
+  "resources": {
+    "postgres_cpu": 2.0,
+    "clickhouse_cpu": 2.0,
+    "postgres_memory": "2g",
+    "postgres_memory_bytes": 2147483648,
+    "clickhouse_memory": "3g",
+    "clickhouse_memory_bytes": 3221225472,
+    "runner_memory": "1500m",
+    "runner_memory_bytes": 1572864000,
+    "equal_engine_memory_limits": false,
+    "scope": "Configured Compose limits, not observed query resource consumption"
+  },
+  "limitations": [
+    "Single Docker host; no cold-cache control",
+    "Equal CPU quotas do not isolate engine CPU scheduling on a shared host",
+    "Network/client latency included",
+    "CPU, query peak memory and IO are not measured",
+    "Synthetic data; cannot generalize to production",
+    "Memory budgets differ; not an equal-memory engine isolation test"
+  ],
+  "mirror_counts": {
+    "dim_course": 1000,
+    "dim_date": 1097,
+    "dim_instructor": 100,
+    "dim_lesson": 10000,
+    "dim_payment_method": 3,
+    "dim_quiz": 1000,
+    "dim_user": 600,
+    "fact_enrollments": 5000,
+    "fact_lesson_completions": 36000,
+    "fact_payments": 5000,
+    "fact_quiz_attempts": 10000
+  },
+  "mirror_seconds": 4.901,
+  "mirror_reused": false,
+  "mirror_hashes": {
+    "dim_course": {
+      "clickhouse": "b986cd054a5be0248c98cae09198d4e513fdfb5cb43f8bb7a253c245ca05a3d7",
+      "postgres": "b986cd054a5be0248c98cae09198d4e513fdfb5cb43f8bb7a253c245ca05a3d7"
+    },
+    "dim_date": {
+      "clickhouse": "037a55ba228d66cf2ae0cfc7b6bee14dedd04fa67df1d10c59ca0a2084e47f5e",
+      "postgres": "037a55ba228d66cf2ae0cfc7b6bee14dedd04fa67df1d10c59ca0a2084e47f5e"
+    },
+    "dim_instructor": {
+      "clickhouse": "72841e92b3f9a3021a1de9fd6ec162d84e02daa782a38734ca4bc7910538169a",
+      "postgres": "72841e92b3f9a3021a1de9fd6ec162d84e02daa782a38734ca4bc7910538169a"
+    },
+    "dim_lesson": {
+      "clickhouse": "d90f9adf64cbd569e882d3e0eac404e16e064ad7881bb29340f2819a1aef8329",
+      "postgres": "d90f9adf64cbd569e882d3e0eac404e16e064ad7881bb29340f2819a1aef8329"
+    },
+    "dim_payment_method": {
+      "clickhouse": "276390be348889366c9daa2ff874e82b6ecae80c534fd8390fb822975d8a259b",
+      "postgres": "276390be348889366c9daa2ff874e82b6ecae80c534fd8390fb822975d8a259b"
+    },
+    "dim_quiz": {
+      "clickhouse": "ad75fb72846fcd9b1f0c93c22b9558f8d74b421dd2af14e3ff4211afbeacdc53",
+      "postgres": "ad75fb72846fcd9b1f0c93c22b9558f8d74b421dd2af14e3ff4211afbeacdc53"
+    },
+    "dim_user": {
+      "clickhouse": "9557b3dfcffa23c87db0d4b06754bb070d5bf767ba8162fa0d7b8d08f0751fad",
+      "postgres": "9557b3dfcffa23c87db0d4b06754bb070d5bf767ba8162fa0d7b8d08f0751fad"
+    },
+    "fact_enrollments": {
+      "clickhouse": "96adacb7d7e833f5c8f93aeea5ecf192c0d977c53b3c51e231f5779e561ddbe6",
+      "postgres": "96adacb7d7e833f5c8f93aeea5ecf192c0d977c53b3c51e231f5779e561ddbe6"
+    },
+    "fact_lesson_completions": {
+      "clickhouse": "785fb1842530dae76ec3b962e1987198f5dbcd74904e1b7c8b1d52154c81690e",
+      "postgres": "785fb1842530dae76ec3b962e1987198f5dbcd74904e1b7c8b1d52154c81690e"
+    },
+    "fact_payments": {
+      "clickhouse": "2cca09b0128c6d53f4f1e555498a4d65243d4ad1343a3e8557058ae24b740d5f",
+      "postgres": "2cca09b0128c6d53f4f1e555498a4d65243d4ad1343a3e8557058ae24b740d5f"
+    },
+    "fact_quiz_attempts": {
+      "clickhouse": "60368cd04e1f22aeb23a08fd0aed397016d2fd849d400467397b681cb29f7508",
+      "postgres": "60368cd04e1f22aeb23a08fd0aed397016d2fd849d400467397b681cb29f7508"
+    }
+  },
+  "query_parity": {
+    "Q1_monthly_revenue": {
+      "equal": true,
+      "rows": 35,
+      "sha256": "27f16adebffd765fb451745e200566173d2a55ec828184fe558e7c6c0c728002"
+    },
+    "Q2_slice_category": {
+      "equal": true,
+      "rows": 5,
+      "sha256": "c609f781138ee0f00b1ecf5d2aa95f4ddfefac60d127eacb35cdf9c6dfe5577c"
+    },
+    "Q3_four_dimensions": {
+      "equal": true,
+      "rows": 45,
+      "sha256": "75cd452cb98391b9aabb56d535b6998f1f0f32de10335c799ad5bcfaf4bb0594"
+    },
+    "Q4_window_running_total": {
+      "equal": true,
+      "rows": 35,
+      "sha256": "80c575dbbcee31cf4a0e3c025f91197fb49f23193202372c2018c949715ce0de"
+    },
+    "Q5_cube": {
+      "equal": true,
+      "rows": 24,
+      "sha256": "8f24fd73e31b6078181bf26d75e16043aaca78b724289630fa7a6943e349aed6"
+    },
+    "Q6_drill_across": {
+      "equal": true,
+      "rows": 1000,
+      "sha256": "8ad95d500768c0a6e6b7ca30fd83b9a8e0f4b53b594b0cf1267a27cc503160e2"
+    },
+    "Q7_learning_full_scan": {
+      "equal": true,
+      "rows": 5,
+      "sha256": "f470548756193bf8c5b30fce2c8d9ac238bb959eba5ced8dc993a2e344977c86"
+    }
+  },
+  "storage": {
+    "postgres_gold_with_indexes_bytes": 13647872,
+    "clickhouse_gold_bytes_on_disk": 1890442,
+    "clickhouse_gold_uncompressed_column_bytes": 4672191,
+    "scope": "Exactly the mirrored Gold tables; PostgreSQL includes indexes; ClickHouse active parts include metadata",
+    "compared_tables": [
+      "dim_course",
+      "dim_date",
+      "dim_instructor",
+      "dim_lesson",
+      "dim_payment_method",
+      "dim_quiz",
+      "dim_user",
+      "fact_enrollments",
+      "fact_lesson_completions",
+      "fact_payments",
+      "fact_quiz_attempts"
+    ],
+    "postgres_tables": {
+      "dim_course": 262144,
+      "dim_date": 196608,
+      "dim_instructor": 32768,
+      "dim_lesson": 1433600,
+      "dim_payment_method": 32768,
+      "dim_quiz": 139264,
+      "dim_user": 188416,
+      "fact_enrollments": 999424,
+      "fact_lesson_completions": 7241728,
+      "fact_payments": 1212416,
+      "fact_quiz_attempts": 1908736
+    },
+    "clickhouse_tables": {
+      "dim_course": {
+        "bytes_on_disk": 28889,
+        "uncompressed_column_bytes": 72174
+      },
+      "dim_date": {
+        "bytes_on_disk": 8723,
+        "uncompressed_column_bytes": 46086
+      },
+      "dim_instructor": {
+        "bytes_on_disk": 2295,
+        "uncompressed_column_bytes": 3347
+      },
+      "dim_lesson": {
+        "bytes_on_disk": 89454,
+        "uncompressed_column_bytes": 411000
+      },
+      "dim_payment_method": {
+        "bytes_on_disk": 442,
+        "uncompressed_column_bytes": 110
+      },
+      "dim_quiz": {
+        "bytes_on_disk": 17767,
+        "uncompressed_column_bytes": 53893
+      },
+      "dim_user": {
+        "bytes_on_disk": 13746,
+        "uncompressed_column_bytes": 45886
+      },
+      "fact_enrollments": {
+        "bytes_on_disk": 216710,
+        "uncompressed_column_bytes": 405000
+      },
+      "fact_lesson_completions": {
+        "bytes_on_disk": 815175,
+        "uncompressed_column_bytes": 2160000
+      },
+      "fact_payments": {
+        "bytes_on_disk": 313157,
+        "uncompressed_column_bytes": 554695
+      },
+      "fact_quiz_attempts": {
+        "bytes_on_disk": 384084,
+        "uncompressed_column_bytes": 920000
+      }
+    },
+    "clickhouse_auxiliary_tables": {
+      "mv_monthly_revenue_summary": {
+        "bytes_on_disk": 2033,
+        "uncompressed_column_bytes": 1820
+      },
+      "mv_course_completion_stats": {
+        "bytes_on_disk": 5930,
+        "uncompressed_column_bytes": 32000
+      }
+    }
+  }
+}

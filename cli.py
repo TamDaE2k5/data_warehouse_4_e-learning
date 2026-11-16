@@ -1,30 +1,35 @@
-"""
-==================================================================================
-GIAO DIỆN DÒNG LỆNH ĐIỀU HÀNH HỆ THỐNG KHO DỮ LIỆU (DATA WAREHOUSE CLI ENTRYPOINT)
-==================================================================================
-Mục tiêu:
-  - Cung cấp cổng giao tiếp dòng lệnh duy nhất (Unified CLI) để quản trị, vận hành
-    và giám sát toàn bộ hệ thống Data Warehouse E-Learning 2022–2024.
-  - Danh mục các lệnh được hỗ trợ:
-      1. `setup`:     Khởi tạo 2 cơ sở dữ liệu (learning_oltp, dwh_staging) và phân quyền 3 roles.
-      2. `generate`:  Sinh tập dữ liệu tác nghiệp mẫu quy mô lớn (500k enrollments, ~5.72M bản ghi).
-      3. `pipeline`:  Điều phối luồng nạp ETL (hỗ trợ cờ `--mode full` hoặc `--mode incremental`).
-      4. `validate`:  Kích hoạt cổng kiểm toán 116 chỉ tiêu chất lượng dữ liệu tự động.
-      5. `reports`:   Thực thi 10 câu truy vấn phân tích nghiệp vụ (R01–R10) và xuất file CSV.
-      6. `benchmark`: Đo kiểm hiệu năng truy vấn phân tích đối chuẩn giữa ClickHouse và PostgreSQL.
-      7. `all`:       Chạy toàn diện chu trình khép kín: generate $\rightarrow$ pipeline $\rightarrow$ reports $\rightarrow$ benchmark.
-  - Cơ chế an toàn: Toàn bộ các tác vụ xử lý đều được bọc trong Khóa phân tán
-    (PostgreSQL Advisory Lock qua `project_lock()`) để chống xung đột tiến trình đồng thời.
-==================================================================================
-"""
+"""Single entry point for setup, data, ETL, analytics and diagnostics."""
 
 import argparse
-from etl.common import project_lock
+import json
+import sys
+from contextlib import closing
 
 
-def main():
+def enrollment_count(value):
+    number = int(value)
+    if number < 100 or number % 100:
+        raise argparse.ArgumentTypeError("must be a positive multiple of 100 (at least 100)")
+    return number
+
+
+def measured_runs(value):
+    number = int(value)
+    if number < 3:
+        raise argparse.ArgumentTypeError("must be at least 3")
+    return number
+
+
+def nonnegative(value):
+    number = int(value)
+    if number < 0:
+        raise argparse.ArgumentTypeError("must be zero or greater")
+    return number
+
+
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Online Learning DW — Kho dữ liệu học trực tuyến 2022–2024"
+        description="Online Learning Warehouse: synthetic data, ETL, analytics and diagnostics"
     )
     parser.add_argument(
         "command",
@@ -35,88 +40,94 @@ def main():
             "validate",
             "reports",
             "benchmark",
+            "doctor",
             "all",
         ],
-        help="Lệnh cần thực thi trong hệ thống",
     )
     parser.add_argument(
         "--enrollments",
-        type=int,
+        type=enrollment_count,
         default=500000,
-        help="Số lượng lượt ghi danh cần sinh (mặc định 500.000 dòng sự kiện)",
+        help="Synthetic source size for generate/all; multiple of 100 (default: 500000)",
     )
     parser.add_argument(
-        "--seed",
-        type=int,
-        default=2024,
-        help="Hạt giống sinh ngẫu nhiên tái lập (mặc định: 2024)",
+        "--seed", type=nonnegative, default=2024, help="Deterministic generator seed"
     )
     parser.add_argument(
-        "--runs",
-        type=int,
-        default=5,
-        help="Số lần đo lặp lại cho benchmark (mặc định: 5 lần)",
+        "--runs", type=measured_runs, default=5, help="Measured benchmark runs, >=3"
+    )
+    parser.add_argument(
+        "--warmups", type=nonnegative, default=2, help="Benchmark warm-up runs, >=0"
     )
     parser.add_argument(
         "--reuse-mirror",
         action="store_true",
-        help="Tái sử dụng bản sao PG Gold nếu đã có sẵn; vẫn đối chiếu toàn vẹn mã băm SHA256",
+        help="Verify and reuse the existing PostgreSQL Gold mirror",
     )
-    parser.add_argument(
-        "--mode",
-        choices=["full", "incremental"],
-        default="full",
-        help="Chế độ chạy pipeline: nạp toàn bộ (full) hoặc nạp tăng dần (incremental)",
-    )
+    parser.add_argument("--mode", choices=["full", "incremental"], default="full")
+    args = parser.parse_args(argv)
+    if args.reuse_mirror and args.command not in ("benchmark", "all"):
+        parser.error("--reuse-mirror is only valid for benchmark/all")
+    if args.mode != "full" and args.command not in ("pipeline", "all"):
+        parser.error("--mode is only valid for pipeline/all")
+    return args
 
-    args = parser.parse_args()
 
-    # --------------------------------------------------------------------------
-    # 1. LỆNH KHỞI TẠO HẠ TẦNG (SETUP)
-    # --------------------------------------------------------------------------
-    # Lệnh setup chạy bằng quyền quản trị postgres để tạo DB và phân quyền bảo mật,
-    # không phụ thuộc vào khóa phân tán trên dwh_staging vì DB có thể chưa tồn tại.
-    if args.command == "setup":
+def main(argv=None):
+    # Parse before importing database clients so --help and invalid input work offline.
+    args = parse_args(argv)
+    from etl.common import project_lock, source_connect
+
+    if args.command in ("setup", "all"):
         from etl.bootstrap import setup
 
         setup()
+        if args.command == "setup":
+            print("Setup complete. Source reader and staging roles are ready.")
+            return
+    if args.command == "doctor":
+        from etl.doctor import doctor
+
+        print(json.dumps(doctor(), indent=2, ensure_ascii=False, default=str))
         return
-
-    # --------------------------------------------------------------------------
-    # 2. CÁC TÁC VỤ VẬN HÀNH & PHÂN TÍCH (BỌC TRONG ADVISORY LOCK)
-    # --------------------------------------------------------------------------
-    # Ngăn ngừa tình trạng 2 tiến trình ETL hoặc 2 kỹ sư cùng kích hoạt lệnh song song
-    with project_lock():
-        # 2.1 Sinh dữ liệu nguồn giả lập
+    with project_lock(shared=args.command == "reports"):
         if args.command in ("generate", "all"):
-            from oltp.generate_data import generate
+            with closing(source_connect()) as source, source.cursor() as cursor:
+                cursor.execute("SELECT count(*) FROM oltp.enrollments")
+                populated = cursor.fetchone()[0] > 0
+            if args.command == "generate" or not populated:
+                from oltp.generate_data import generate
 
-            generate(args.enrollments, args.seed)
-
-        # 2.2 Điều phối luồng ETL nạp dữ liệu (Full hoặc Incremental)
+                generate(args.enrollments, args.seed)
+            else:
+                print("Source already populated. Reusing source data.")
         if args.command in ("pipeline", "all"):
             from etl.pipeline import pipeline
 
             pipeline(args.mode)
-
-        # 2.3 Cổng kiểm toán chất lượng 116 chỉ tiêu toàn vẹn
         if args.command == "validate":
             from etl.validate import validate
 
             validate()
-
-        # 2.4 Xuất 10 báo cáo phân tích nghiệp vụ SQL sang CSV
         if args.command in ("reports", "all"):
             from analytics.reports import reports
 
             reports()
-
-        # 2.5 Chạy benchmark đối chuẩn hiệu năng ClickHouse vs PostgreSQL
         if args.command in ("benchmark", "all"):
             from benchmark.run_benchmark import benchmark
 
-            benchmark(args.runs, reuse_mirror=args.reuse_mirror)
+            benchmark(args.runs, reuse_mirror=args.reuse_mirror, warmups=args.warmups)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (RuntimeError, ValueError, AssertionError) as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print(
+            "Interrupted. Run pipeline again to recover any unfinished publication.",
+            file=sys.stderr,
+        )
+        sys.exit(130)

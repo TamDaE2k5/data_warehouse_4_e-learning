@@ -1,12 +1,3 @@
-# ==============================================================================
-# DANH MỤC PHIÊN BẢN KHÓA CHẶT (PINNED DEPENDENCIES LOCKFILE)
-# ==============================================================================
-# Mục đích:
-# Khóa chặt phiên bản chính xác đến từng thư viện phụ thuộc gián tiếp (Transitive Dependencies).
-# Đảm bảo tính tái lập (Reproducibility): Dù build image hôm nay hay 3 năm sau trên bất kỳ máy nào,
-# môi trường chạy luôn cài đặt đúng 100% phiên bản này, không bao giờ bị lỗi do thư viện mới tự động update.
-# ==============================================================================
-
 certifi==2026.7.22
 clickhouse-connect==0.8.11
 Faker==33.1.0

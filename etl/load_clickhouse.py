@@ -1,68 +1,75 @@
-"""
-==================================================================================
-MODULE CÔNG BỐ BẢN GOLD & HOÀN TÁC NGUYÊN TỬ (ATOMIC PUBLISH & SELF-HEALING ENGINE)
-==================================================================================
-Mục tiêu:
-  - Triển khai mẫu thiết kế phát hành Shadow Build / Blue-Green Deployment ở cấp độ bảng:
-      1. Toàn bộ quá trình tính toán và kiểm định chất lượng dữ liệu được thực hiện
-         trên cơ sở dữ liệu bóng `gold_build`.
-      2. Khi vượt qua 100% các bài kiểm toán, hàm `publish()` tiến hành hoán đổi nguyên tử
-         (Atomic Table Swap) từ `gold_build` sang cơ sở dữ liệu chính thức `gold` đang phục vụ BI.
-  - Đảm bảo tính khả dụng cao tuyệt đối (Zero-Downtime Guarantee):
-      + Sử dụng lệnh chuyên dụng của ClickHouse: `EXCHANGE TABLES gold.{table} AND gold_build.{table}`.
-      + Lệnh này hoán đổi con trỏ thư mục dữ liệu ở cấp độ metadata trong vòng vài mili-giây.
-      + Người dùng cuối (Dashboard/Business Analyst) không bao giờ gặp tình trạng bảng bị khóa,
-        bị rỗng hoặc đang nạp dở dang.
-  - Cơ chế tự phục hồi và hoàn tác an toàn (Self-Healing Rollback Pattern):
-      + Nếu trong chuỗi hoán đổi các bảng (ví dụ đang hoán đổi đến bảng thứ 5) mà phát sinh lỗi,
-        hệ thống sẽ tự động duyệt ngược lại danh sách và hoán đổi các bảng đã tráo trở về vị trí cũ,
-        đảm bảo kho Gold production không bao giờ rơi vào trạng thái chắp vá (Inconsistent State).
-==================================================================================
-"""
+"""Recover publication using table UUIDs even after the process disappears."""
+
+from etl.common import ROOT
+from etl.watermark import incomplete_publications, record_run
+
+FEEDS = ("feed_monthly_revenue", "feed_course_completion")
 
 
-def publish(ch, tables: list):
-    """
-    Công bố danh sách các bảng từ database bóng 'gold_build' sang database chính thức 'gold'.
+def table_uuids(ch):
+    rows = ch.query(
+        "SELECT database,name,toString(uuid) FROM system.tables WHERE database IN ('gold','gold_build')"
+    ).result_rows
+    return {(database, name): identifier for database, name, identifier in rows}
 
-    Tham số:
-      - ch: Client kết nối tới ClickHouse.
-      - tables (list): Danh sách tên các bảng cần hoán đổi (ví dụ: ['dim_user', 'fact_payments', ...]).
-    """
-    # Đảm bảo cơ sở dữ liệu đích 'gold' luôn tồn tại
+
+def drop_feeds(ch):
+    for name in FEEDS:
+        ch.command(f"DROP VIEW IF EXISTS gold.{name}")
+
+
+def create_feeds(ch):
+    for sql in (ROOT / "dw/ddl/aggregate_feeds.sql").read_text(encoding="utf-8").split(";"):
+        if sql.strip():
+            ch.command(sql.strip())
+
+
+def publication_plan(ch, tables):
+    identifiers = table_uuids(ch)
+    return [
+        dict(table=name, old=identifiers.get(("gold", name)), new=identifiers[("gold_build", name)])
+        for name in sorted(tables)
+    ]
+
+
+def publish(ch, plan):
     ch.command("CREATE DATABASE IF NOT EXISTS gold")
+    drop_feeds(ch)
+    for entry in plan:
+        name = entry["table"]
+        if entry["old"]:
+            ch.command(f"EXCHANGE TABLES gold.{name} AND gold_build.{name}")
+        else:
+            ch.command(f"RENAME TABLE gold_build.{name} TO gold.{name}")
+    create_feeds(ch)
 
-    # Lấy danh sách các bảng hiện có trong database gold để quyết định dùng lệnh EXCHANGE hay RENAME
-    existing = {r[0] for r in ch.query("SHOW TABLES FROM gold").result_rows}
-    switched = []  # Danh sách theo dõi các bảng đã hoán đổi thành công để phục vụ rollback khi có sự cố
 
-    try:
-        for table in tables:
-            if table in existing:
-                # --------------------------------------------------------------
-                # HOÁN ĐỔI NGUYÊN TỬ TỨC THÌ (ATOMIC SWAP):
-                # --------------------------------------------------------------
-                # Hoán đổi hai bảng cùng lúc trong 1 thao tác metadata duy nhất.
-                # Bảng mới trong gold_build chuyển thành gold; bảng cũ trong gold chuyển thành gold_build.
-                ch.command(f"EXCHANGE TABLES gold.{table} AND gold_build.{table}")
+def recover(ch):
+    recovered = []
+    for manifest, plan in incomplete_publications():
+        ch.command("CREATE DATABASE IF NOT EXISTS gold")
+        drop_feeds(ch)
+        identifiers = table_uuids(ch)
+        for entry in reversed(plan):
+            name, old, new = entry["table"], entry["old"], entry["new"]
+            live = identifiers.get(("gold", name))
+            build = identifiers.get(("gold_build", name))
+            if live == new and build == old:
+                if old:
+                    ch.command(f"EXCHANGE TABLES gold.{name} AND gold_build.{name}")
+                else:
+                    ch.command(f"RENAME TABLE gold.{name} TO gold_build.{name}")
+            elif live == old and build == new:
+                continue
             else:
-                # Nếu là bảng mới tinh chưa từng có trong database gold: Đổi tên từ gold_build sang gold
-                ch.command(f"RENAME TABLE gold_build.{table} TO gold.{table}")
-
-            # Đánh dấu bảng này đã hoán đổi thành công
-            switched.append(table)
-
-    except Exception:
-        # ======================================================================
-        # CƠ CHẾ ROLLBACK TỰ PHỤC HỒI (SELF-HEALING ROLLBACK):
-        # ======================================================================
-        # Khi xảy ra bất kỳ lỗi nào giữa chừng: Duyệt ngược danh sách các bảng đã hoán đổi
-        # và thực hiện hoán đổi ngược lại để đưa toàn bộ hệ thống về nguyên trạng an toàn ban đầu.
-        for table in reversed(switched):
-            if table in existing:
-                ch.command(f"EXCHANGE TABLES gold.{table} AND gold_build.{table}")
-            else:
-                ch.command(f"RENAME TABLE gold.{table} TO gold_build.{table}")
-
-        # Ném lại ngoại lệ để tiến trình pipeline ghi nhận lỗi và dừng hoạt động
-        raise
+                raise RuntimeError(
+                    f"Cannot recover {name}: unexpected table UUIDs. Preserve gold_build and inspect pipeline_runs."
+                )
+        if all(entry["old"] for entry in plan):
+            create_feeds(ch)
+        manifest.update(
+            status="recovered", recovery="Previous Gold restored; source checkpoint unchanged"
+        )
+        record_run(manifest, "recovered")
+        recovered.append(manifest["run_id"])
+    return recovered

@@ -1,0 +1,27 @@
+{
+  "status": "success",
+  "benchmark_run": "e134f4f34d004b99b6a1cbd6d5c8daba",
+  "source": "Checksummed immutable runtime benchmark bundle",
+  "sha256": {
+    "sql/Q1_monthly_revenue.postgres.sql": "be6ae1e8f6db2e61db3cb90be9df829879d8c1cf2ca7dd7d4cba2e92c770865d",
+    "sql/Q1_monthly_revenue.clickhouse.sql": "2412ddadb39e3a1dda8f9121132a2b3396d530ef9313769cabe496f6ceaa4e39",
+    "sql/Q2_slice_category.postgres.sql": "17a4aabee08047e863619618eaf8275d1f05f49c6f4f071a5b9641cd0c7ae442",
+    "sql/Q2_slice_category.clickhouse.sql": "d564c0ed7c0bc22fdec05e3d4363e71db802d12a290a9b1bf35294e485300500",
+    "sql/Q3_four_dimensions.postgres.sql": "f1f36a3542ad2503c8ced95225fe7bd86f6cfb84df3727e21cf90a516bd82aef",
+    "sql/Q3_four_dimensions.clickhouse.sql": "a898cf69f3a84acc580bb6e7dd6c2c8dabe98a90eaf7cca55417f868b86ad75b",
+    "sql/Q4_window_running_total.postgres.sql": "79ee3059ff28f4e6cc062e12da487142a5ef3ec7f4cfc0eabfc953bafcd03e7b",
+    "sql/Q4_window_running_total.clickhouse.sql": "fe97b1c1f3a0680200016067b5445e563aac79337ad22bf805d0a54b0f32aead",
+    "sql/Q5_cube.postgres.sql": "a9fbb389879b609abbc7e6f34c711e7968bb8fdb3928d1d8d8ab7844f2d90d15",
+    "sql/Q5_cube.clickhouse.sql": "883a9fb825302650df925ae7da569c04724b60c685d7b5389eb5fe4a20b9dc79",
+    "sql/Q6_drill_across.postgres.sql": "256f0ecc3f404b4e472c0ba4760a99bcb77f195ea4d1b126eb123416f8893d94",
+    "sql/Q6_drill_across.clickhouse.sql": "f401935801809d158dc579c9ba06cdb718792587ab319e432ff1f481a291fa9c",
+    "sql/Q7_learning_full_scan.postgres.sql": "41384bba8f8bf16ae9fffdb9645563984e1feaf841d5b4851c89637850394029",
+    "sql/Q7_learning_full_scan.clickhouse.sql": "e1e841defce9de0513c130c76a9e627fc533f439ca68d78ee2e307c7d5dc3bf6",
+    "postgres_schema.sql": "efec3e39524fb1164ee60d7b71d7e3d42c06a9f4f9bcbf0baba359a863d545cc",
+    "summary.json": "9e3d7557215e47c1b476bfd4a4c596e03c826159743a79aec0627ea2a3531daa",
+    "runs.csv": "0ebbb6fe74b972ed786d0b3dc3ed51232c147010554c2862970f268749d010c6",
+    "summary.csv": "52173265f4929b11b06902f78b665b6bd5fbe6543d37509a9f8845c2d6d72312",
+    "results.md": "7eddd35d4d82b7dca7f667ee011c1ac265406f7170516361f79baeecad050da2",
+    "metadata.json": "b6763b580e3dd46e383a56e89b230086df15053154689e6f19cfeafc9c474489"
+  }
+}

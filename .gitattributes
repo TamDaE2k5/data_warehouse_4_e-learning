@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.jpg binary
+*.png binary
+
+# Preserve byte-level checksums in the curated evidence bundle.
+docs/verification/upgrade/** -text whitespace=cr-at-eol

@@ -1,0 +1,8 @@
+query,postgres_median_ms,postgres_min_ms,postgres_max_ms,postgres_mean_ms,postgres_stdev_ms,clickhouse_median_ms,clickhouse_min_ms,clickhouse_max_ms,clickhouse_mean_ms,clickhouse_stdev_ms,speedup_pg_over_ch,measured_runs,result_rows
+Q1_monthly_revenue,3.292,2.988,4.039,3.44,0.541,12.878,10.592,15.598,13.023,2.506,0.255669,3,35
+Q2_slice_category,0.858,0.677,0.893,0.809,0.116,8.897,7.57,27.579,14.682,11.189,0.096405,3,5
+Q3_four_dimensions,4.562,4.263,4.969,4.598,0.354,10.947,9.768,11.001,10.572,0.697,0.41678,3,45
+Q4_window_running_total,2.089,1.779,2.368,2.079,0.295,9.645,9.535,10.673,9.951,0.628,0.216578,3,35
+Q5_cube,3.496,3.484,4.123,3.701,0.366,12.666,9.482,13.992,12.047,2.318,0.276013,3,24
+Q6_drill_across,4.181,3.996,7.225,5.134,1.813,12.918,12.522,13.267,12.902,0.373,0.323657,3,1000
+Q7_learning_full_scan,36.511,31.411,37.878,35.267,3.408,13.184,10.458,13.209,12.284,1.581,2.769249,3,5

@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "checked_at": "2026-11-15T01:50:21.044953+00:00",
+  "lint": "not_run",
+  "formatting": "not_run",
+  "tests": 14,
+  "skipped": 0,
+  "skipped_tests": [],
+  "fail_on_skip": true,
+  "selected_module": "tests.test_dashboard_unit",
+  "failures": 0,
+  "errors": 0,
+  "integration_included": false,
+  "integration_excluded": [],
+  "scope": "offline unit tests"
+}

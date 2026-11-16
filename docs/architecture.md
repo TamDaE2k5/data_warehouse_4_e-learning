@@ -1,91 +1,104 @@
-# Kiến trúc và thiết kế
+# Architecture
 
-## Mục tiêu và tiêu chí nghiệm thu
+The warehouse turns synthetic online-learning transactions into historical, reconciled analytical data. It runs on one Docker host and deliberately uses a small stack: PostgreSQL, Python, ClickHouse and Streamlit.
 
-Trả lời doanh thu theo thời gian/danh mục/giảng viên/phương thức, ghi danh và hoàn thành, thời gian học, kết quả quiz. Tiêu chí: nguồn ≥5M dòng; sự kiện 2022–2024; đủ 4 fact + 6 dim; SCD2, role-playing, degenerate, conformed; pipeline có đối soát; ≥5 benchmark queries có kết quả thực và equality.
+## Data boundaries
+
+| Layer | Location | Responsibility |
+|---|---|---|
+| Operational source | PostgreSQL `learning_oltp.oltp` | Business records, learner history and transactional change journal |
+| Silver | PostgreSQL `dwh_staging.silver` | Validated current source rows, keyed by source identifiers |
+| Quarantine | PostgreSQL `dwh_staging.quarantine` | Rejected payloads, reasons and resolution state |
+| Control | PostgreSQL `dwh_staging.staging` | Transaction checkpoints, source revisions, pending changes, runs and publication plans |
+| Candidate warehouse | ClickHouse `gold_build` | Build and validate a complete candidate before publication |
+| Serving warehouse | ClickHouse `gold` | Four facts, seven dimensions, two summary tables and their view feeds |
+| Temporary bridge | ClickHouse `stage_bridge` | PostgreSQL table engines reading Silver; removed after use |
+| Comparison mirror | PostgreSQL `dwh_staging.benchmark` | Same Gold rows and columns for cross-engine parity and timing |
+
+Source and staging are separate databases on the same PostgreSQL service. There is no extra ClickHouse Bronze copy. Original business data remains in OLTP and original change payloads are retained in the source journal or quarantine. The ETL source connection is read-only; initialization and synthetic fixture generation use a separate administrative connection.
 
 ```mermaid
 flowchart LR
-  F[Faker + NumPy seed 2024] --> P[(PostgreSQL oltp)]
-  P -->|repeatable-read snapshot, batches 50K| B[(ClickHouse bronze)]
-  B -->|pandas trim / lowercase / conform| S[(ClickHouse silver)]
-  S -->|dimensions then facts / ASOF lookup| G[(ClickHouse gold)]
-  G --> R[10 SQL reports + CSV]
-  G -->|exact copy and full row SHA256| M[(PostgreSQL benchmark)]
-  M --> Q[7 paired queries / parity / timings]
-  G --> Q
+  S[(PostgreSQL OLTP)] --> J[Transactional journal]
+  S --> E[Python extraction and validation]
+  J --> E
+  E --> Q[(Quarantine)]
+  E --> V[(PostgreSQL Silver)]
+  V --> C[ClickHouse candidate]
+  C --> G{Quality gate}
+  G -->|pass| P[Recoverable publication]
+  G -->|fail| K[Keep published version]
+  P --> W[(ClickHouse Gold)]
+  W --> D[Read-only dashboard]
+  W --> R[SQL and CSV reports]
 ```
 
-## Grain và bus matrix
+## Four business processes and seven conformed dimensions
 
-| Fact | Grain / khóa nghiệp vụ | Date | User | Course | Instructor | Lesson | Quiz | Method |
+The model is a fact constellation, also called a Galaxy schema: four stars share consistent dimensions. Each fact retains its own grain.
+
+| Fact | One row represents | Date role | User | Course | Instructor | Lesson | Quiz | Method |
 |---|---|---|---|---|---|---|---|---|
-| fact_enrollments | 1 enrollment_id; trạng thái cuối kỳ 2024 | enrolled + completed | ✓ | ✓ | ✓ | | | |
-| fact_payments | 1 payment_id, transaction_id duy nhất | paid | ✓ | ✓ | ✓ | | | ✓ |
-| fact_lesson_completions | 1 enrollment + lesson hoàn thành | completed | ✓ | ✓ | | ✓ | | |
-| fact_quiz_attempts | 1 enrollment + quiz + attempt_number | attempted | ✓ | ✓ | | | ✓ | |
+| `fact_enrollments` | An enrollment, updated as progress changes | enrolled / completed | yes | yes | yes | | | |
+| `fact_payments` | A payment transaction | paid | yes | yes | yes | | | yes |
+| `fact_lesson_completions` | A completed lesson within an enrollment | completed | yes | yes | | yes | | |
+| `fact_quiz_attempts` | An attempt at a quiz within an enrollment | attempted | yes | yes | | | yes | |
 
-Enrollment là accumulating snapshot với hai mốc ngày. Không có snapshot mỗi ngày nên không suy ra tiến độ lịch sử theo ngày từ trạng thái cuối kỳ. Payment, lesson, quiz là transaction facts.
+`dim_user` retains history with SCD Type 2. `dim_date` plays several date roles. Other dimensions retain the current master attributes (Type 1). Payment method, lesson and quiz are specialized dimensions; not every dimension belongs to every fact.
+
+Drill-across reports aggregate each fact to a shared grain before joining. Joining payment rows directly to many lesson or quiz rows would multiply amounts. Count distinct people using natural `user_id`, not SCD version key `user_sk`.
+
+Enrollment progress is a current accumulating snapshot. It does not reconstruct progress for every past day. Revenue is retained charged revenue after full-refund flags, attributed to the original payment date; there is no separate refund-date event. Values use integer VND and UTC. The generated calendar covers 2022–2024, and Gold event times have second precision.
+
+## Full and incremental ingestion
+
+Full extraction uses a PostgreSQL `REPEATABLE READ` snapshot and batches of at most 50,000 rows. Silver, source-version records and the pending-change state commit together. A durable `needs_full` flag prevents a failed full build from being mistaken for a completed baseline during an incremental retry.
+
+Incremental extraction reads `oltp.change_journal`. Source triggers record the transaction ID, revision, operation and payload in the same transaction as the business change. The ETL processes transaction IDs below the snapshot's safe boundary. This prevents an earlier open transaction from being skipped when a later transaction commits first. A long-running source transaction can delay later committed changes; completeness takes priority over advancing an unsafe checkpoint.
+
+Per-key revision state rejects older journal updates. Pending changes survive a committed Silver transaction followed by a failed Gold build. Deletes produce durable tombstone state so replaying an older update cannot resurrect a removed record.
+
+Invalid new records are quarantined and excluded from Silver. Invalid updates retain the last known clean row. A valid correction resolves the rejection; deletion of an invalid source record also resolves its open rejection.
+
+Additive source columns outside the explicit contract are ignored. Missing required columns or incompatible types stop extraction before publication. Schema evolution is intentional: update the contract and mapping for meaningful changes, then rebuild.
+
+## Rebuild and reuse decisions
+
+Dimensions are rebuilt when a candidate is needed. New append-only event rows can reuse existing fact partitions and insert only the delta. Updates/deletes of older events rebuild the affected fact. A changed dimension or history mapping can require rebuilding facts. Enrollment revisions are consolidated before serving; changes across enrollment-month partitions force the required rebuild.
+
+Incremental reuse checks table UUIDs and all-column content fingerprints against the committed publication. A same-row-count mutation therefore cannot silently pass as an intact warehouse. If integrity is lost, the affected build restores data from Silver. A mandatory full rebuild skips scanning the old Gold unnecessarily. These checks add real work to an empty incremental run; historical no-op timings from earlier versions are not promises for the upgraded code.
+
+## Historical learner attribution
+
+Source `user_history` contains half-open intervals `[valid_from, valid_to)` with `2100-01-01` as the current-version sentinel. Each event selects the learner version whose start is the nearest one not after the event, using `ASOF JOIN`; validation also checks that the event precedes the interval end.
+
+An activity exactly at the new version's start belongs to the new version. Enrollment uses enrollment time even when completion occurs after a move; payment, lesson and quiz events use their respective event times. The gate checks a single current version, interval ordering and coverage. The warehouse cannot invent history absent from the source.
+
+## Publication and recovery
 
 ```mermaid
-erDiagram
-  dim_user ||--o{ fact_payments : user_sk
-  dim_course ||--o{ fact_payments : course_sk
-  dim_instructor ||--o{ fact_payments : instructor_sk
-  dim_payment_method ||--o{ fact_payments : method_sk
-  dim_date ||--o{ fact_payments : date_sk
-  dim_user ||--o{ fact_enrollments : user_sk
-  dim_course ||--o{ fact_enrollments : course_sk
-  dim_instructor ||--o{ fact_enrollments : instructor_sk
-  dim_date ||--o{ fact_enrollments : enrolled_date_sk
-  dim_date ||--o{ fact_enrollments : completed_date_sk
-  dim_user ||--o{ fact_lesson_completions : user_sk
-  dim_course ||--o{ fact_lesson_completions : course_sk
-  dim_lesson ||--o{ fact_lesson_completions : lesson_sk
-  dim_date ||--o{ fact_lesson_completions : date_sk
-  dim_user ||--o{ fact_quiz_attempts : user_sk
-  dim_course ||--o{ fact_quiz_attempts : course_sk
-  dim_quiz ||--o{ fact_quiz_attempts : quiz_sk
-  dim_date ||--o{ fact_quiz_attempts : date_sk
+stateDiagram-v2
+  [*] --> extracting
+  extracting --> building
+  building --> publishing
+  publishing --> completed
+  publishing --> recovered: restore exchanged table UUIDs
+  recovered --> extracting: retry from durable pending state
+  extracting --> completed: verified unchanged warehouse
+  extracting --> failed
+  building --> failed
 ```
 
-## Kỹ thuật chiều
+Before exchanging the first table, PostgreSQL stores the candidate and previous UUID for every table. If a process stops during publication, the next pipeline compares actual UUIDs with this plan and restores tables already exchanged. Unknown UUIDs cause a stop for investigation, rather than speculative deletion of candidate data. Aggregate view feeds are dropped before exchanging their target tables and recreated afterward.
 
-- **SCD Type 2:** 50.000 user và 60.000 phiên bản lịch sử. 10.000 user đổi city từ 2023-07-01. `valid_from <= event_time < valid_to`; sentinel 2100-01-01 cho phiên bản hiện tại. ASOF chọn phiên bản mới nhất có valid_from ≤ thời điểm; quality gate kiểm tra valid_to để không nhận khoảng trống lịch sử. Test riêng giây trước, đúng lúc và giây sau ranh giới.
-- **Surrogate keys:** user_sk = source history_id + 10.000.000, mỗi phiên bản khác nhau; các dimension Type 1 có ánh xạ số nguyên riêng ổn định trong dataset này. Đây là ánh xạ xác định trong namespace từng bảng, không phải dịch vụ cấp khóa đa nguồn tổng quát. Fact phải JOIN dimension để lookup, không chỉ tính công thức trên fact.
-- **Role playing:** dim_date dùng hai lần trong enrollment. completed_date_sk=0 khi chưa hoàn thành; dòng unknown có full_date=1970-01-01 và các level bằng 0, không phải ngày nghiệp vụ.
-- **Degenerate:** transaction_id ở fact_payments; enrollment_id ở các fact học tập hỗ trợ drill-through, không tạo dimension invoice giả.
-- **Conformed:** date, user, course dùng cùng định nghĩa và cùng key trên mọi fact. user_sk có thể khác giữa hai sự kiện của cùng user nếu xảy ra hai phía ranh giới SCD2; distinct learner phải dùng user_id từ dim_user.
-- Geography phi chuẩn hóa trong user; category/difficulty trong course để giữ mô hình star. Week không được đặt giữa day và month vì tuần có thể băng qua tháng; hierarchy chính day → month → quarter → year.
+Only after all exchanges and feeds succeed does one PostgreSQL transaction commit the publication manifest/checkpoint and consume pending changes. JSON files are readable exports; PostgreSQL publication state is authoritative. A stale `pipeline.json` cannot make a newly created database ready.
 
-## Measures và phép tổng hợp
+`EXCHANGE TABLES` is atomic for one table, not for the complete multi-database operation. Project writers acquire an exclusive PostgreSQL advisory lock; reports and dashboard snapshots acquire a shared lock. Connections are retained for the entire protected operation and closed on failures. External SQL clients must honor the same lock or avoid the publication window.
 
-Tiền VND integer (không Float). original_vnd - discount_vnd = charged_vnd; net_vnd = charged_vnd × (1 - refunded). Tất cả thanh toán thành công, một phần bị refund toàn phần; giao dịch khóa miễn phí có giá 0. Không có currency conversion hay payment failure.
+## Access and deployment scope
 
-Số giây, số câu đúng/tổng câu, tiền và event count là additive ở grain phù hợp. Completion rate = SUM(is_completed)/COUNT(enrollment), pass rate = SUM(is_passed)/COUNT(attempt), điểm quiz = 100×SUM(correct_count)/SUM(total_questions). Không cộng các tỷ lệ hoặc lấy trung bình của các trung bình không trọng số. Distinct learner là non-additive; không cộng distinct giữa nhóm.
+`learning_reader` can only read the source. `learning_stage` writes staging/control/benchmark data and cannot connect to OLTP. Dashboard configuration does not contain the PostgreSQL administrative password. Dashboard pipeline execution is disabled by default; explicitly setting `DW_DASHBOARD_ALLOW_PIPELINE=1` enables the local operator action.
 
-Drill-across tổng hợp mỗi fact về cùng course/date trước khi nối. Lấy union bộ khóa hai phía để không mất ngày chỉ có payment hoặc enrollment (paid_at chậm hơn enrolled_at 60 giây có thể qua ngày).
+All host ports bind to loopback. Memory limits are configurable and recorded in benchmark metadata. CPU limits are quotas on a shared host. Application containers use an init process and prohibit privilege escalation.
 
-## Physical và ETL
-
-- PostgreSQL: PK, FK, unique, check; COPY trong một transaction, ANALYZE sau load.
-- Bronze: 1:1 nguồn, `_run_id`, `_loaded_at` UTC, `_source`; giữ nguyên email bẩn để audit. Đây là snapshot gần nhất, không phải lịch sử append-only vĩnh viễn.
-- Silver: thực sự đọc từ Bronze, dùng pandas trim/lowercase/upper country; không silently drop invalid rows. Nguồn PK đã ngăn duplicate; quality gate phát hiện duplicate/orphan thay vì dùng merge bất đồng bộ làm dedup.
-- Gold: ClickHouse MergeTree, fact partition tháng, sort date/course/user/event; dimension LowCardinality cho thuộc tính lặp. Không cần FINAL vì không dùng ReplacingMergeTree.
-- Full rebuild, không incremental/CDC. Từng run lưu manifest và quality gate; PostgreSQL advisory lock bảo vệ các CLI command. Stream đọc Bronze dùng client riêng với client insert để tránh khóa session.
-- Giới hạn bộ nhớ truy vấn ClickHouse 1,8 GB, 4 threads, spill group/sort ở 500 MB; container PG 2 GB, CH 3 GB, runner 1500 MB.
-- Không materialized aggregate vì workload hiện tại đủ nhỏ; benchmark không được hưởng shortcut khác giữa hai DB.
-
-## Giới hạn và failure modes
-
-Không có atomic publish toàn bộ database. Khi rebuild, CLI consumer đợi success manifest, còn external SQL reader phải tuân thủ maintenance window. Mất tiến trình có thể để manifest running; rerun pipeline khôi phục. Nếu nguồn đã commit nhưng artifact generation chưa ghi do mất điện, không generate lại; kiểm tra count nguồn rồi chạy pipeline.
-
-Nếu nguồn schema thay đổi, CREATE IF NOT EXISTS không tự migrate bảng cũ; triển khai migration có kiểm soát trước khi chạy. Không hỗ trợ deletes/late events incrementally. Manifest trên host phải đi cùng volumes; sửa DB ngoài CLI làm mất giá trị bằng chứng kiểm tra, cần validate và rebuild artifacts.
-
-Thiết kế không cung cấp production HA, replication, back-up tự động, TLS hay quyền read-only BI riêng. Đây là môi trường học tập localhost với dữ liệu giả.
-
-## Tham khảo kỹ thuật
-
-- [ClickHouse ASOF JOIN](https://clickhouse.com/blog/clickhouse-fully-supports-joins-part1): lookup nearest earlier effective time, kết hợp quality check nửa mở.
-- [ClickHouse Docker entrypoint](https://github.com/ClickHouse/ClickHouse/blob/master/docker/server/entrypoint.sh): cấu hình user/password qua environment.
-- Tài liệu bài tập nguyên bản: `../plan.md`, `../quy_trinh_tao_data_warehouse.md`, `../tong_hop_thuat_ngu.md`. Các tài liệu thuật ngữ có ký hiệu trích dẫn chưa resolve; không coi đó là bằng chứng kiểm chứng runtime.
+The ClickHouse account is shared between ETL and dashboard in this local demo. Read-only UI controls are not database authorization. There is no application authentication, distributed HA, tested backup restoration or production load qualification. Put authentication and separate least-privilege database roles in place before considering a network deployment. See [security](../SECURITY.md) and [operations](operations.md).

@@ -1,0 +1,21 @@
+{
+  "status": "success",
+  "checked_at": "2026-11-15T01:50:09.755874+00:00",
+  "lint": "not_run",
+  "formatting": "not_run",
+  "tests": 58,
+  "skipped": 1,
+  "skipped_tests": [
+    {
+      "test": "unittest.loader.ModuleSkipped.tests.test_dashboard_unit",
+      "reason": "Dashboard dependencies are not installed in this image"
+    }
+  ],
+  "fail_on_skip": false,
+  "selected_module": null,
+  "failures": 0,
+  "errors": 0,
+  "integration_included": true,
+  "integration_excluded": [],
+  "scope": "unit and database integration"
+}

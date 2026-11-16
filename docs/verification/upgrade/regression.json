@@ -1,0 +1,32 @@
+{
+  "status": "success",
+  "checked_at": "2026-11-15T01:51:29.528879+00:00",
+  "checks": [
+    "empty run preserves every Gold fingerprint",
+    "reader lock blocks publication writer",
+    "writer lock blocks a concurrent publication writer",
+    "same-count Gold corruption is detected and rebuilt from Silver",
+    "an additive source column leaves the warehouse contract intact",
+    "a missing required source column blocks staging without changing published data",
+    "restoring the source schema allows a safe retry",
+    "open earlier transaction defers a later committed transaction",
+    "late commit and later commit both arrive exactly once",
+    "new invalid record is excluded from Silver and recorded in quarantine",
+    "deleting invalid source data resolves its open quarantine record",
+    "invalid update preserves last known clean row",
+    "invalid update is quarantined",
+    "corrected source resolves quarantine",
+    "physical delete reaches Silver and Gold",
+    "injected quality failure stops the pipeline",
+    "quality failure leaves every Gold fingerprint and publication manifest unchanged",
+    "committed staging delta survives failure before publication",
+    "process stops after an actual table exchange",
+    "restart recovers partial publication and completes retry",
+    "retry consumes pending changes without duplicate facts",
+    "failed full snapshot forces complete rebuild on incremental retry",
+    "full snapshot tombstone prevents resurrection by older journal update"
+  ],
+  "count": 23,
+  "scope": "isolated synthetic smoke database",
+  "project": "learning-dw-smoke-upgrade-final-20261115"
+}

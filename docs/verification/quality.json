@@ -1,0 +1,812 @@
+{
+  "status": "success",
+  "checked_at": "2026-11-10T10:14:20.102685+00:00",
+  "checks": [
+    {
+      "name": "silver.users.count",
+      "actual": 50000,
+      "expected": 50000,
+      "passed": true
+    },
+    {
+      "name": "silver.users.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.users.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.user_history.count",
+      "actual": 60000,
+      "expected": 60000,
+      "passed": true
+    },
+    {
+      "name": "silver.user_history.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.user_history.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.instructors.count",
+      "actual": 100,
+      "expected": 100,
+      "passed": true
+    },
+    {
+      "name": "silver.instructors.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.instructors.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.courses.count",
+      "actual": 1000,
+      "expected": 1000,
+      "passed": true
+    },
+    {
+      "name": "silver.courses.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.courses.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.lessons.count",
+      "actual": 10000,
+      "expected": 10000,
+      "passed": true
+    },
+    {
+      "name": "silver.lessons.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.lessons.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.quizzes.count",
+      "actual": 1000,
+      "expected": 1000,
+      "passed": true
+    },
+    {
+      "name": "silver.quizzes.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.quizzes.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.payment_methods.count",
+      "actual": 3,
+      "expected": 3,
+      "passed": true
+    },
+    {
+      "name": "silver.payment_methods.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.payment_methods.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.enrollments.count",
+      "actual": 500000,
+      "expected": 500000,
+      "passed": true
+    },
+    {
+      "name": "silver.enrollments.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.enrollments.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.payments.count",
+      "actual": 500000,
+      "expected": 500000,
+      "passed": true
+    },
+    {
+      "name": "silver.payments.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.payments.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.lesson_completions.count",
+      "actual": 3600000,
+      "expected": 3600000,
+      "passed": true
+    },
+    {
+      "name": "silver.lesson_completions.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.lesson_completions.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.quiz_attempts.count",
+      "actual": 1040000,
+      "expected": 1040000,
+      "passed": true
+    },
+    {
+      "name": "silver.quiz_attempts.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.quiz_attempts.positive_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "source.minimum_rows",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "silver.email_clean",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "silver.email_unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_user.source_count",
+      "actual": 60000,
+      "expected": 60000,
+      "passed": true
+    },
+    {
+      "name": "dim_course.source_count",
+      "actual": 1000,
+      "expected": 1000,
+      "passed": true
+    },
+    {
+      "name": "dim_instructor.source_count",
+      "actual": 100,
+      "expected": 100,
+      "passed": true
+    },
+    {
+      "name": "dim_lesson.source_count",
+      "actual": 10000,
+      "expected": 10000,
+      "passed": true
+    },
+    {
+      "name": "dim_quiz.source_count",
+      "actual": 1000,
+      "expected": 1000,
+      "passed": true
+    },
+    {
+      "name": "dim_payment_method.source_count",
+      "actual": 3,
+      "expected": 3,
+      "passed": true
+    },
+    {
+      "name": "dim_date.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_user.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_course.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_instructor.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_lesson.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_quiz.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_payment_method.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "date.1096_days_plus_unknown",
+      "actual": 1097,
+      "expected": 1097,
+      "passed": true
+    },
+    {
+      "name": "date.leap_day",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "scd.one_current",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "scd.no_overlap_or_gap",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.count",
+      "actual": 500000,
+      "expected": 500000,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.user_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.course_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.date_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.date_mapping",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.scd_interval",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.source_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.source_identity",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.period",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_enrollments.three_years",
+      "actual": 3,
+      "expected": 3,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.count",
+      "actual": 500000,
+      "expected": 500000,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.user_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.course_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.date_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.date_mapping",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.scd_interval",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.source_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.source_identity",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.period",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.three_years",
+      "actual": 3,
+      "expected": 3,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_payments.enrollment_identity_and_time",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.count",
+      "actual": 3600000,
+      "expected": 3600000,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.user_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.course_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.date_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.date_mapping",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.scd_interval",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.source_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.source_identity",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.period",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.three_years",
+      "actual": 3,
+      "expected": 3,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_lesson_completions.enrollment_identity_and_time",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.count",
+      "actual": 1040000,
+      "expected": 1040000,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.user_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.course_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.date_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.date_mapping",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.scd_interval",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.source_key",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.source_identity",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.period",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.three_years",
+      "actual": 3,
+      "expected": 3,
+      "passed": true
+    },
+    {
+      "name": "gold.fact_quiz_attempts.enrollment_identity_and_time",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "enrollments.instructor_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "payments.instructor_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "payments.method_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "payments.transaction_unique",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "payments.money",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "enrollments.completed_date_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "enrollments.role_dates",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "enrollments.lesson_totals",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "lesson_completions.dimension_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "lesson_completions.course_consistency",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "quiz_attempts.dimension_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "quiz_attempts.course_consistency",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "quiz.score_and_pass",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "lessons.duration_nonnegative",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "payments.refund_domain",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_course.instructor_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_lesson.course_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "dim_quiz.course_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "scd.source_user_fk",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "scd.unique_effective_start",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "source.gold_money_reconciliation",
+      "actual": [
+        144719192800,
+        152349360300,
+        26879639700
+      ],
+      "expected": [
+        144719192800,
+        152349360300,
+        26879639700
+      ],
+      "passed": true
+    },
+    {
+      "name": "revenue_summary.reconciliation",
+      "actual": 144719192800,
+      "expected": 144719192800,
+      "passed": true
+    },
+    {
+      "name": "course_summary.reconciliation",
+      "actual": 500000,
+      "expected": 500000,
+      "passed": true
+    }
+  ],
+  "fingerprints": {
+    "dim_date": [
+      1097,
+      4266302967812554063,
+      3457102935963817141
+    ],
+    "dim_user": [
+      60000,
+      11840754539229965205,
+      3036610790166143603
+    ],
+    "dim_course": [
+      1000,
+      736314465958523614,
+      7759243530719605000
+    ],
+    "dim_instructor": [
+      100,
+      17805767847014366763,
+      8635146338335411985
+    ],
+    "dim_lesson": [
+      10000,
+      10321938275860252929,
+      16724422471828246073
+    ],
+    "dim_quiz": [
+      1000,
+      3482977383733368888,
+      4762157269550898450
+    ],
+    "dim_payment_method": [
+      3,
+      14358454978583287048,
+      4048812240518748982
+    ],
+    "fact_enrollments": [
+      500000,
+      11266735357205072790,
+      14062824109914421390
+    ],
+    "fact_payments": [
+      500000,
+      10152660872160275199,
+      7133954726885002675
+    ],
+    "fact_lesson_completions": [
+      3600000,
+      9857026320618237457,
+      16449577284713856437
+    ],
+    "fact_quiz_attempts": [
+      1040000,
+      4377461253556924861,
+      14245355670777727113
+    ]
+  },
+  "seconds": 8.545,
+  "source_rows": 5762103,
+  "run_id": "ac20c959b45a49959c62f29c24b1fa5c"
+}

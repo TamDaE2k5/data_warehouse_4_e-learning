@@ -1,0 +1,21 @@
+{
+  "status": "success",
+  "checked_at": "2026-11-15T02:14:47.171830+00:00",
+  "lint": "not_run",
+  "formatting": "not_run",
+  "tests": 69,
+  "skipped": 0,
+  "skipped_tests": [],
+  "fail_on_skip": true,
+  "selected_module": null,
+  "failures": 0,
+  "errors": 0,
+  "integration_included": false,
+  "integration_excluded": [
+    "tests.test_pipeline.WarehouseIntegrationTests.test_cube_subtotal_null_labels",
+    "tests.test_pipeline.WarehouseIntegrationTests.test_drill_across_preserves_totals",
+    "tests.test_pipeline.WarehouseIntegrationTests.test_scd_exact_boundary",
+    "tests.test_pipeline.WarehouseIntegrationTests.test_unknown_date_only_uncompleted"
+  ],
+  "scope": "offline unit tests"
+}

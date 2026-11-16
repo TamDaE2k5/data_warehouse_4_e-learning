@@ -1,0 +1,82 @@
+{
+  "status": "success",
+  "pipeline_run": "3e69663b45de4fc5883192e87ad48ac6",
+  "generated_at": "2026-11-15T01:49:45.518043+00:00",
+  "synthetic": true,
+  "reports": {
+    "R01_revenue_rollup": {
+      "rows": 51,
+      "seconds": 0.1134,
+      "sha256": "53f2d28d9238448f41827a0cc90f7c15ac6454da62ad1824c33b220ac6e03606",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    },
+    "R02_completion_rate": {
+      "rows": 15,
+      "seconds": 0.0369,
+      "sha256": "e0fa9e05bae5954652b79a0f5c51fcebbdf3adaa312a125fe05aa0a3c055a2b9",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    },
+    "R03_quiz_performance": {
+      "rows": 5,
+      "seconds": 0.0346,
+      "sha256": "140bd4c46ec159ccb8708e920080bc0f2b43973c4dcb985a3f9dbec3234856df",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    },
+    "R04_role_playing_dates": {
+      "rows": 5,
+      "seconds": 0.0366,
+      "sha256": "f3709ae06f57a0b69c85b13d27a5657301271ba6b974b31e7f0cd4e3c692b9c9",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    },
+    "R05_historical_city": {
+      "rows": 12,
+      "seconds": 0.0331,
+      "sha256": "c478362961a1715d151c9504796ca78758c4b304e7e380af3ed2c349fa47fc06",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    },
+    "R06_top_courses_rank": {
+      "rows": 120,
+      "seconds": 0.0446,
+      "sha256": "6cde8d9ba13b487fdcb0826648f7a0e791addaf8284d2c485affa759674a33b2",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    },
+    "R07_revenue_enrollment_drill_across": {
+      "rows": 175,
+      "seconds": 0.1382,
+      "sha256": "11b89ebaeae581b87331761c475993994b1a5f07a071db8c55d9086f55959f5f",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    },
+    "R08_slice_dice": {
+      "rows": 12,
+      "seconds": 0.0408,
+      "sha256": "1c0295d1a29d0f002972bd16b654cde05c157cfa721e46ca6fdd10d5e45b5333",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    },
+    "R09_cube": {
+      "rows": 96,
+      "seconds": 0.0455,
+      "sha256": "c5aff1fbf4a2d83b4de946d52fe11de93f70252c8c3e945f7822a878791d4662",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    },
+    "R10_learning_time": {
+      "rows": 50,
+      "seconds": 0.0527,
+      "sha256": "a407f40b2d83fc36bcda0e9371cdb838bfc0d8e5347825071092d78f33319c0a",
+      "source_sql": "analytics/queries.sql",
+      "null_representation": "empty CSV cell; subtotal dimensions are NULL for ROLLUP/CUBE"
+    }
+  },
+  "curation": {
+    "source_sha256": "eae79b55d95fd8f03fb49dcfb39784fed6dfa1780859c9d0b29b685d7453d1c1",
+    "omitted": "Runtime CSV export directory path; report data files remain runtime outputs."
+  }
+}

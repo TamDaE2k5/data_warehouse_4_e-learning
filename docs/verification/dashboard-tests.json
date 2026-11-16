@@ -1,0 +1,22 @@
+{
+  "status": "success",
+  "checked_at": "2026-11-10T11:12:31.781084+00:00",
+  "count": 13,
+  "checks": [
+    "overview renders four interactive charts",
+    "all six navigation pages render",
+    "category filter preserves a working overview",
+    "quarterly view aggregates twelve monthly points to four quarters",
+    "quiz IDs use readable categorical bars",
+    "quiz search has an honest empty state",
+    "study score drilldown loads without hidden query errors",
+    "historical mover drilldown loads",
+    "empty category selection does not imply zero observations",
+    "reset restores latest year and all categories",
+    "empty custom day renders safely on all analytical pages",
+    "filtered totals reconcile independently to PostgreSQL Silver",
+    "calendar comparisons stay inside coverage and preserve leap days"
+  ],
+  "pipeline_run": "3674992fa2fb4b738fe0fa0f4d1957e7",
+  "scope": "dashboard redesign, live synthetic Gold and independent Silver reconciliation"
+}

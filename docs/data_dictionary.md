@@ -1,474 +1,513 @@
-# 📖 TỪ ĐIỂN DỮ LIỆU KHO DỮ LIỆU (DATA DICTIONARY)
-## Hệ Thống Kho Dữ Liệu Học Trực Tuyến E-Learning (2022–2024)
-
-> **Mô tả chung:**  
-> Tài liệu này đặc tả chi tiết cấu trúc cột, kiểu dữ liệu, ràng buộc giá trị Nullable và ý nghĩa nghiệp vụ của toàn bộ các bảng trong hệ thống, bao gồm 3 tầng kiến trúc:
-> 1. **Tầng Nguồn Tác Nghiệp (OLTP):** PostgreSQL `learning_oltp` (Schema `oltp`).
-> 2. **Tầng Trung Chuyển (Staging & Silver):** PostgreSQL `dwh_staging` (Schema `staging`, `quarantine`, `silver`).
-> 3. **Tầng Kho Dữ Liệu Đa Chiều (Gold):** ClickHouse `gold` (Galaxy Schema: 7 Dimensions, 4 Facts, 2 Aggregate Feeds).
-> 
-> *Quy ước chuẩn:* Toàn bộ mốc thời gian là chuẩn **UTC**. Đơn vị tiền tệ là **VND** (số nguyên).
-
----
-
-## 📑 MỤC LỤC ĐIỀU HƯỚNG
-
-- [1. Tầng Nguồn Tác Nghiệp: PostgreSQL `learning_oltp`](#1-tầng-nguồn-tác-nghiệp-postgresql-learning_oltp)
-  - [1.1 oltp.courses](#11-oltpcourses)
-  - [1.2 oltp.enrollments](#12-oltpenrollments)
-  - [1.3 oltp.instructors](#13-oltpinstructors)
-  - [1.4 oltp.lesson_completions](#14-oltplesson_completions)
-  - [1.5 oltp.lessons](#15-oltplessons)
-  - [1.6 oltp.payment_methods](#16-oltppayment_methods)
-  - [1.7 oltp.payments](#17-oltppayments)
-  - [1.8 oltp.quiz_attempts](#18-oltpquiz_attempts)
-  - [1.9 oltp.quizzes](#19-oltpquizzes)
-  - [1.10 oltp.user_history](#110-oltpuser_history)
-  - [1.11 oltp.users](#111-oltpusers)
-- [2. Tầng Trung Chuyển: PostgreSQL `dwh_staging`](#2-tầng-trung-chuyển-postgresql-dwh_staging)
-  - [2.1 staging.etl_watermarks](#21-stagingetl_watermarks)
-  - [2.2 quarantine.quarantine_records](#22-quarantinequarantine_records)
-  - [2.3 Lớp dữ liệu sạch: schema `silver`](#23-lớp-dữ-liệu-sạch-schema-silver)
-- [3. Tầng Kho Đa Chiều: ClickHouse `gold`](#3-tầng-kho-đa-chiều-clickhouse-gold)
-  - [3.1 Các Bảng Chiều (Dimension Tables)](#31-các-bảng-chiều-dimension-tables)
-    - [gold.dim_date](#golddim_date)
-    - [gold.dim_user (SCD Type 2)](#golddim_user-scd-type-2)
-    - [gold.dim_course](#golddim_course)
-    - [gold.dim_instructor](#golddim_instructor)
-    - [gold.dim_lesson](#golddim_lesson)
-    - [gold.dim_payment_method](#golddim_payment_method)
-    - [gold.dim_quiz](#golddim_quiz)
-  - [3.2 Các Bảng Sự Kiện (Fact Tables)](#32-các-bảng-sự-kiện-fact-tables)
-    - [gold.fact_payments](#goldfact_payments)
-    - [gold.fact_enrollments](#goldfact_enrollments)
-    - [gold.fact_lesson_completions](#goldfact_lesson_completions)
-    - [gold.fact_quiz_attempts](#goldfact_quiz_attempts)
-  - [3.3 Các Bảng Tổng Hợp Tính Sẵn (Aggregate Feeds)](#33-các-bảng-tổng-hợp-tính-sẵn-aggregate-feeds)
-    - [gold.agg_monthly_revenue](#goldagg_monthly_revenue)
-    - [gold.agg_course_completion](#goldagg_course_completion)
-
----
-
-## 1. Tầng Nguồn Tác Nghiệp: PostgreSQL `learning_oltp`
-
-### 1.1 `oltp.courses`
-* **Mô tả:** Danh mục các khóa học được mở trên nền tảng.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `course_id` | bigint | NO | Khóa chính (PK). Mã định danh khóa học. |
-| `instructor_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `instructors.instructor_id`). |
-| `title` | text | NO | Tiêu đề tên khóa học. |
-| `category` | text | NO | Nhóm khóa học: `Data`, `Programming`, `Business`, `Design`, `Language`. |
-| `difficulty` | text | NO | Cấp độ: `beginner`, `intermediate`, `advanced`. |
-| `price_vnd` | bigint | NO | Giá niêm yết của khóa học, VND integer $\ge 0$. |
-| `created_at` | timestamptz | NO | Thời điểm tạo khóa học trên hệ thống (UTC). |
-| `updated_at` | timestamptz | NO | Thời điểm cập nhật cuối cùng (phục vụ CDC Watermark). |
-
----
-
-### 1.2 `oltp.enrollments`
-* **Mô tả:** Thông tin đăng ký khóa học của học viên và trạng thái học tập.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `enrollment_id` | bigint | NO | Khóa chính (PK). Mã lượt ghi danh. Khóa suy biến (Degenerate Key). |
-| `user_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `users.user_id`). Mã học viên. |
-| `course_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `courses.course_id`). Mã khóa học. |
-| `enrolled_at` | timestamptz | NO | Thời điểm ghi danh (UTC). Dùng để tra cứu phiên bản SCD2 của User. |
-| `completed_at` | timestamptz | YES | Thời điểm hoàn thành đủ 10 bài. NULL nếu chưa hoàn thành. |
-| `lessons_completed` | smallint | NO | Số bài học đã hoàn thành cuối kỳ (10 nếu tốt nghiệp, 6 nếu đang học). |
-| `updated_at` | timestamptz | NO | Thời điểm cập nhật trạng thái gần nhất (UTC). |
-
----
-
-### 1.3 `oltp.instructors`
-* **Mô tả:** Danh sách giảng viên giảng dạy trên nền tảng.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `instructor_id` | bigint | NO | Khóa chính (PK). Mã định danh giảng viên. |
-| `full_name` | text | NO | Họ và tên đầy đủ của giảng viên. |
-| `expertise` | text | NO | Lĩnh vực chuyên môn chính của giảng viên. |
-| `created_at` | timestamptz | NO | Thời điểm tạo hồ sơ giảng viên (UTC). |
-| `updated_at` | timestamptz | NO | Thời điểm cập nhật thông tin giảng viên (UTC). |
-
----
-
-### 1.4 `oltp.lesson_completions`
-* **Mô tả:** Nhật ký chi tiết mỗi lần học viên hoàn thành xong một bài học cụ thể.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `completion_id` | bigint | NO | Khóa chính (PK). Mã sự kiện hoàn thành bài. |
-| `enrollment_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `enrollments.enrollment_id`). |
-| `user_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `users.user_id`). |
-| `course_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `courses.course_id`). |
-| `lesson_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `lessons.lesson_id`). Mỗi khóa gồm 10 bài. |
-| `completed_at` | timestamptz | NO | Mốc thời gian hoàn thành bài học (UTC). |
-| `time_spent_seconds`| integer | NO | Thời gian học bài thực tế tính bằng giây ($>0$). |
-| `updated_at` | timestamptz | NO | Thời điểm ghi nhận sự kiện (UTC). |
-
----
-
-### 1.5 `oltp.lessons`
-* **Mô tả:** Cấu trúc bài giảng chi tiết của từng khóa học.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `lesson_id` | bigint | NO | Khóa chính (PK). Mã bài học. |
-| `course_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `courses.course_id`). Khóa học chứa bài này. |
-| `title` | text | NO | Tiêu đề tên bài giảng. |
-| `position` | smallint | NO | Thứ tự bài học trong giáo trình (từ 1 đến 10). |
-| `created_at` | timestamptz | NO | Thời điểm tạo bài học (UTC). |
-| `updated_at` | timestamptz | NO | Thời điểm chỉnh sửa nội dung bài học (UTC). |
-
----
-
-### 1.6 `oltp.payment_methods`
-* **Mô tả:** Danh mục các hình thức thanh toán được hỗ trợ.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `method_id` | bigint | NO | Khóa chính (PK). Mã phương thức thanh toán. |
-| `method_name` | text | NO | Tên phương thức: `bank_transfer`, `card`, `wallet`. |
-| `created_at` | timestamptz | NO | Thời điểm khai báo phương thức (UTC). |
-| `updated_at` | timestamptz | NO | Thời điểm cập nhật (UTC). |
-
----
-
-### 1.7 `oltp.payments`
-* **Mô tả:** Lịch sử các giao dịch thanh toán học phí của học viên.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `payment_id` | bigint | NO | Khóa chính (PK). Mã thanh toán nội bộ. |
-| `enrollment_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `enrollments.enrollment_id`). Mỗi enrollment có 1 payment. |
-| `user_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `users.user_id`). Học viên trả tiền. |
-| `course_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `courses.course_id`). Khóa học được mua. |
-| `method_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `payment_methods.method_id`). |
-| `transaction_id` | text | NO | Mã giao dịch ngân hàng duy nhất dạng `TXN-...`. Chiều suy biến. |
-| `paid_at` | timestamptz | NO | Thời điểm thanh toán thành công (UTC). |
-| `original_vnd` | bigint | NO | Giá gốc danh nghĩa trước giảm giá (VND). |
-| `discount_vnd` | bigint | NO | Tiền giảm giá khuyến mại (VND, trong khoảng $[0, \text{original\_vnd}]$). |
-| `charged_vnd` | bigint | NO | Tiền thực tế bị trừ: $\text{original\_vnd} - \text{discount\_vnd}$. |
-| `refunded` | smallint | NO | Cờ trạng thái: `1` là giao dịch đã hoàn tiền, `0` là bình thường. |
-| `updated_at` | timestamptz | NO | Thời điểm cập nhật trạng thái thanh toán (UTC). |
-
----
-
-### 1.8 `oltp.quiz_attempts`
-* **Mô tả:** Nhật ký từng lần học viên bấm nộp bài thi trắc nghiệm.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `attempt_id` | bigint | NO | Khóa chính (PK). Mã lượt làm bài thi. |
-| `enrollment_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `enrollments.enrollment_id`). |
-| `user_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `users.user_id`). |
-| `course_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `courses.course_id`). |
-| `quiz_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `quizzes.quiz_id`). Mỗi khóa có 1 quiz tổng kết. |
-| `attempt_number` | smallint | NO | Số thứ tự lần thi (1 hoặc 2; dải 99–119 dùng cho dữ liệu test tăng dần). |
-| `attempted_at` | timestamptz | NO | Thời điểm nộp bài thi (UTC). |
-| `correct_count` | smallint | NO | Số câu trả lời đúng (từ 0 đến `total_questions`). |
-| `total_questions`| smallint | NO | Tổng số câu hỏi của đề thi (mặc định 20 câu). |
-| `time_spent_seconds`| integer | NO | Thời gian làm bài thi tính bằng giây ($>0$). |
-| `updated_at` | timestamptz | NO | Thời điểm ghi nhận kết quả thi (UTC). |
-
----
-
-### 1.9 `oltp.quizzes`
-* **Mô tả:** Cấu hình đề thi trắc nghiệm đánh giá cuối khóa học.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `quiz_id` | bigint | NO | Khóa chính (PK). Mã bài kiểm tra. |
-| `course_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `courses.course_id`). Khóa học áp dụng bài thi này. |
-| `title` | text | NO | Tiêu đề bài kiểm tra. |
-| `total_questions`| smallint | NO | Tổng số câu hỏi trong bài kiểm tra (mặc định 20 câu). |
-| `created_at` | timestamptz | NO | Thời điểm tạo đề thi (UTC). |
-| `updated_at` | timestamptz | NO | Thời điểm cập nhật đề thi (UTC). |
-
----
-
-### 1.10 `oltp.user_history`
-* **Mô tả:** Bảng lưu vết lịch sử thay đổi thông tin cư trú của học viên (SCD Type 2 Nguồn).
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `history_id` | bigint | NO | Khóa chính (PK). Mã định danh phiên bản lịch sử. |
-| `user_id` | bigint | NO | Khóa ngoại (FK $\rightarrow$ `users.user_id`). Một học viên có thể có nhiều phiên bản. |
-| `full_name` | text | NO | Họ và tên học viên tại thời điểm có hiệu lực. |
-| `email` | text | NO | Email học viên tại thời điểm có hiệu lực. |
-| `city` | text | NO | Thành phố cư trú trong phiên bản này (Ha Noi, Da Nang, Ho Chi Minh, Can Tho). |
-| `country` | char(2) | NO | Mã quốc gia ISO alpha-2 (`VN`). |
-| `valid_from` | timestamptz | NO | Mốc thời gian bắt đầu có hiệu lực của phiên bản (bao gồm mốc này). |
-| `valid_to` | timestamptz | NO | Mốc thời gian hết hiệu lực (không bao gồm; `2100-01-01` đối với bản ghi hiện hành). |
-| `updated_at` | timestamptz | NO | Thời điểm hệ thống ghi nhận phiên bản (UTC). |
-
----
-
-### 1.11 `oltp.users`
-* **Mô tả:** Bảng thông tin học viên hiện hành tại hệ thống tác nghiệp.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `user_id` | bigint | NO | Khóa chính (PK). Mã định danh học viên duy nhất. |
-| `full_name` | text | NO | Họ và tên học viên. |
-| `email` | text | NO | Địa chỉ email của học viên. |
-| `city` | text | NO | Thành phố cư trú hiện tại. |
-| `country` | char(2) | NO | Mã quốc gia ISO alpha-2 (`VN`). |
-| `created_at` | timestamptz | NO | Thời điểm đăng ký tài khoản học viên (UTC). |
-| `updated_at` | timestamptz | NO | Thời điểm cập nhật tài khoản gần nhất (UTC). |
-
----
-
-## 2. Tầng Trung Chuyển: PostgreSQL `dwh_staging`
-
-### 2.1 `staging.etl_watermarks`
-* **Mô tả:** Bảng theo dõi mốc phân thủy (Watermark) phục vụ cơ chế nạp tăng dần (CDC) không sót dòng.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `table_name` | text | NO | Khóa chính (PK). Tên bảng nguồn tác nghiệp (ví dụ: `payments`, `quiz_attempts`). |
-| `last_processed_time`| timestamptz | NO | Mốc `updated_at` lớn nhất đã nạp thành công ở mẻ trước. |
-| `last_processed_id` | bigint | NO | Khóa chính lớn nhất tại mốc thời gian đó (chống trùng mốc cùng giây). |
-| `last_run_id` | text | NO | Mã UUID của lần chạy pipeline thành công gần nhất. |
-
----
-
-### 2.2 `quarantine.quarantine_records`
-* **Mô tả:** Trạm kiểm dịch bắt giữ các bản ghi bẩn vi phạm luật nghiệp vụ hoặc sai kiểu dữ liệu.
-
-| Tên cột | Kiểu dữ liệu | Nullable | Ràng buộc / Ý nghĩa nghiệp vụ |
-| :--- | :--- | :---: | :--- |
-| `table_name` | text | NO | Tên bảng phát hiện bản ghi lỗi. |
-| `source_id` | bigint | NO | Khóa chính từ bảng nguồn của bản ghi bị từ chối. |
-| `source_updated_at` | timestamptz | NO | Mốc `updated_at` của bản ghi lỗi tại nguồn. |
-| `error_code` | text | NO | Mã phân loại lỗi (ví dụ: `ERR_INVALID_EMAIL`, `ERR_FUTURE_TIMESTAMP`). |
-| `rejection_reason` | text | NO | Diễn giải chi tiết lý do bản ghi bị cách ly. |
-| `detected_at` | timestamptz | NO | Thời điểm hệ thống phát hiện và đưa vào cách ly (mặc định: `now()`). |
-| `raw_payload` | jsonb | NO | Bản chụp toàn bộ dòng dữ liệu nguyên trạng ở định dạng JSONB để tra cứu và khôi phục. |
-
----
-
-### 2.3 Lớp dữ liệu sạch: schema `silver`
-* **Mô tả:** Bao gồm 11 bảng tương ứng với 11 bảng nguồn OLTP nhưng đã được:
-  - Cắt tỉa khoảng trắng dư thừa (`TRIM`).
-  - Chuẩn hóa email thành chữ thường (`LOWERCASE`).
-  - Chuẩn hóa mã quốc gia thành chữ hoa (`UPPERCASE`).
-  - Lọc bỏ 100% bản ghi vi phạm luật chất lượng.
-  - Phục vụ làm nguồn cấp dữ liệu sạch (*Trusted Staging*) để tải vào ClickHouse Gold.
-
----
-
-## 3. Tầng Kho Đa Chiều: ClickHouse `gold`
-
-### 3.1 Các Bảng Chiều (Dimension Tables)
-
-#### `gold.dim_date`
-* **Đặc tính:** Chiều Thời gian chuẩn hóa (Conformed Role-Playing Dimension).
-* **Engine:** `MergeTree() ORDER BY date_sk`. Quy mô: 1.097 dòng (3 năm 2022–2024 + dòng 0 cho Unknown).
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `date_sk` | Int64 | Khóa chính chiều (PK). Định dạng số nguyên YYYYMMDD (ví dụ: `20230701`). Dòng `0` là Unknown. |
-| `full_date` | Date | Ngày lịch chuẩn. Giá trị `1970-01-01` đại diện cho ngày chưa xác định. |
-| `year` | Int64 | Năm dương lịch (2022, 2023, 2024). |
-| `quarter` | Int64 | Quý trong năm (1, 2, 3, 4). |
-| `month` | Int64 | Tháng trong năm (1 đến 12). |
-| `day` | Int64 | Ngày trong tháng (1 đến 31). |
-
----
-
-#### `gold.dim_user` (SCD Type 2)
-* **Đặc tính:** Chiều Học viên bảo toàn lịch sử cư trú (Slowly Changing Dimension Type 2).
-* **Engine:** `ReplacingMergeTree() ORDER BY (user_id, valid_from)`. Quy mô: 60.000 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `user_sk` | Int64 | Khóa thay thế chiều (Surrogate Key) = `history_id + 10000000`. Mỗi phiên bản có `user_sk` riêng. |
-| `user_id` | Int64 | Khóa tự nhiên nguồn. Dùng để đếm số học viên phân biệt (`COUNT(DISTINCT user_id)`). |
-| `full_name` | String | Họ và tên học viên (đã làm sạch khoảng trắng). |
-| `email` | String | Email học viên (đã chuẩn hóa chữ thường). |
-| `city` | LowCardinality(String) | Thành phố cư trú (tối ưu nén bộ nhớ qua từ điển LowCardinality). |
-| `country` | LowCardinality(String) | Mã quốc gia ISO alpha-2 (`VN`). |
-| `valid_from` | DateTime('UTC') | Mốc thời gian bắt đầu có hiệu lực của phiên bản cư trú (inclusive). |
-| `valid_to` | DateTime('UTC') | Mốc thời gian hết hiệu lực của phiên bản (exclusive; `2100-01-01` cho bản ghi hiện hành). |
-| `is_current` | Int64 | Cờ hiệu: `1` là phiên bản địa chỉ hiện tại, `0` là phiên bản lịch sử cũ. |
-
----
-
-#### `gold.dim_course`
-* **Engine:** `MergeTree() ORDER BY course_sk`. Quy mô: 1.000 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `course_sk` | Int64 | Khóa thay thế chiều = `course_id + 1000000`. |
-| `course_id` | Int64 | Mã khóa học ở hệ thống tác nghiệp nguồn. |
-| `title` | String | Tiêu đề tên khóa học. |
-| `category` | LowCardinality(String) | Nhóm ngành đào tạo: Data, Programming, Business, Design, Language. |
-| `difficulty` | LowCardinality(String) | Cấp độ khó: beginner, intermediate, advanced. |
-| `instructor_id` | Int64 | Khóa ngoại tham chiếu giảng viên phụ trách. |
-| `price_vnd` | Int64 | Giá niêm yết hiện hành của khóa học (VND). |
-
----
-
-#### `gold.dim_instructor`
-* **Engine:** `MergeTree() ORDER BY instructor_sk`. Quy mô: 100 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `instructor_sk` | Int64 | Khóa thay thế chiều = `instructor_id + 2000000`. |
-| `instructor_id` | Int64 | Mã giảng viên ở hệ thống tác nghiệp nguồn. |
-| `full_name` | String | Họ và tên giảng viên. |
-| `expertise` | LowCardinality(String) | Lĩnh vực chuyên môn chính. |
-
----
-
-#### `gold.dim_lesson`
-* **Engine:** `MergeTree() ORDER BY lesson_sk`. Quy mô: 10.000 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `lesson_sk` | Int64 | Khóa thay thế chiều = `lesson_id + 3000000`. |
-| `lesson_id` | Int64 | Mã bài giảng nguồn. |
-| `course_id` | Int64 | Mã khóa học chứa bài giảng này. |
-| `title` | String | Tiêu đề tên bài giảng. |
-| `position` | Int64 | Thứ tự bài trong chương trình đào tạo (1–10). |
-
----
-
-#### `gold.dim_payment_method`
-* **Engine:** `MergeTree() ORDER BY method_sk`. Quy mô: 3 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `method_sk` | Int64 | Khóa thay thế chiều = `method_id + 5000000`. |
-| `method_id` | Int64 | Mã phương thức thanh toán nguồn. |
-| `method_name` | LowCardinality(String) | Tên phương thức: `bank_transfer`, `card`, `wallet`. |
-
----
-
-#### `gold.dim_quiz`
-* **Engine:** `MergeTree() ORDER BY quiz_sk`. Quy mô: 1.000 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `quiz_sk` | Int64 | Khóa thay thế chiều = `quiz_id + 4000000`. |
-| `quiz_id` | Int64 | Mã đề thi trắc nghiệm nguồn. |
-| `course_id` | Int64 | Mã khóa học có đề thi này. |
-| `title` | String | Tiêu đề đề thi. |
-| `total_questions`| Int64 | Tổng số câu hỏi của đề thi (20 câu). |
-
----
-
-### 3.2 Các Bảng Sự Kiện (Fact Tables)
-
-#### `gold.fact_payments`
-* **Loại Fact:** Transaction Fact (Sự kiện giao dịch thanh toán).
-* **Engine:** `MergeTree() PARTITION BY toYYYYMM(paid_at) ORDER BY (date_sk, payment_id)`. Quy mô: 500.000 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `payment_id` | Int64 | Khóa suy biến định danh giao dịch nguồn. |
-| `enrollment_id` | Int64 | Khóa lượt ghi danh tương ứng. |
-| `transaction_id` | String | Mã giao dịch ngân hàng/cổng thanh toán (Degenerate Dimension). |
-| `user_sk` | Int64 | Khóa nối `dim_user` theo giải thuật ASOF JOIN SCD2 tại thời điểm trả tiền. |
-| `course_sk` | Int64 | Khóa ngoại nối `dim_course`. |
-| `instructor_sk` | Int64 | Khóa ngoại nối `dim_instructor` nhận doanh thu. |
-| `method_sk` | Int64 | Khóa ngoại nối `dim_payment_method`. |
-| `date_sk` | Int64 | Khóa ngoại nối `dim_date` theo ngày thanh toán (`paid_at`). |
-| `paid_at` | DateTime('UTC') | Mốc thời gian giao dịch thanh toán thành công (UTC). |
-| `original_vnd` | Int64 | Độ đo (Measure): Giá gốc của khóa học (GMV). |
-| `discount_vnd` | Int64 | Độ đo (Measure): Tiền chiết khấu giảm giá. |
-| `charged_vnd` | Int64 | Độ đo (Measure): Tiền thực thu từ tài khoản học viên. |
-| `refunded` | Int64 | Cờ hoàn tiền: `1` là giao dịch đã hoàn trả, `0` là giữ lại. |
-| `net_vnd` | Int64 | Độ đo tính toán: Doanh thu thuần = `charged_vnd * (1 - refunded)`. |
-
----
-
-#### `gold.fact_enrollments`
-* **Loại Fact:** Accumulating Snapshot Fact (Tiến độ học tập tích lũy).
-* **Engine:** `ReplacingMergeTree(updated_at) PARTITION BY toYYYYMM(enrolled_at) ORDER BY enrollment_id`. Quy mô: 500.000 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `enrollment_id` | Int64 | Khóa suy biến định danh lượt ghi danh. |
-| `user_sk` | Int64 | Khóa nối `dim_user` tại thời điểm bắt đầu ghi danh (`enrolled_at`). |
-| `course_sk` | Int64 | Khóa ngoại nối `dim_course`. |
-| `instructor_sk` | Int64 | Khóa ngoại nối `dim_instructor`. |
-| `enrolled_date_sk` | Int64 | Khóa nối `dim_date` theo ngày ghi danh (Role-Playing Date 1). |
-| `completed_date_sk`| Int64 | Khóa nối `dim_date` theo ngày tốt nghiệp (Role-Playing Date 2; `0` nếu chưa xong). |
-| `enrolled_at` | DateTime('UTC') | Mốc thời gian ghi danh (UTC). |
-| `completed_at` | Nullable(DateTime('UTC')) | Mốc thời gian hoàn thành khóa học (UTC). |
-| `lessons_completed`| Int64 | Số bài giảng đã hoàn thành tích lũy. |
-| `is_completed` | Int64 | Cờ hoàn thành: `1` khi học đủ 10 bài, `0` khi đang học dở. |
-
----
-
-#### `gold.fact_lesson_completions`
-* **Loại Fact:** Transaction Fact (Hành vi học tập từng bài).
-* **Engine:** `MergeTree() PARTITION BY toYYYYMM(completed_at) ORDER BY (date_sk, completion_id)`. Quy mô: 4.190.000 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `completion_id` | Int64 | Khóa định danh sự kiện hoàn thành bài. |
-| `enrollment_id` | Int64 | Khóa lượt ghi danh chứa bài này. |
-| `user_sk` | Int64 | Khóa nối `dim_user` tại thời điểm hoàn thành bài học. |
-| `course_sk` | Int64 | Khóa ngoại nối `dim_course`. |
-| `lesson_sk` | Int64 | Khóa ngoại nối `dim_lesson`. |
-| `date_sk` | Int64 | Khóa ngoại nối `dim_date` theo ngày học xong. |
-| `completed_at` | DateTime('UTC') | Mốc thời gian học xong bài (UTC). |
-| `time_spent_seconds`| Int64 | Thời gian học bài thực tế tính bằng giây. |
-
----
-
-#### `gold.fact_quiz_attempts`
-* **Loại Fact:** Transaction Fact (Kết quả làm bài thi trắc nghiệm).
-* **Engine:** `ReplacingMergeTree() PARTITION BY toYYYYMM(attempted_at) ORDER BY (enrollment_id, quiz_sk, attempt_number)`. Quy mô: 1.030.000 dòng.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `attempt_id` | Int64 | Khóa định danh lượt thi. |
-| `enrollment_id` | Int64 | Khóa lượt ghi danh tham gia thi. |
-| `user_sk` | Int64 | Khóa nối `dim_user` tại thời điểm làm bài thi. |
-| `course_sk` | Int64 | Khóa ngoại nối `dim_course`. |
-| `quiz_sk` | Int64 | Khóa ngoại nối `dim_quiz`. |
-| `date_sk` | Int64 | Khóa ngoại nối `dim_date` theo ngày nộp bài thi. |
-| `attempted_at` | DateTime('UTC') | Mốc thời gian nộp bài thi (UTC). |
-| `attempt_number` | Int64 | Lần thi thứ mấy (1, 2 hoặc 99..119 khi nạp tăng dần). |
-| `correct_count` | Int64 | Số câu trả lời đúng (từ 0 đến 20). |
-| `total_questions`| Int64 | Tổng số câu hỏi của bài thi (20 câu). |
-| `time_spent_seconds`| Int64 | Thời gian làm bài thi tính bằng giây. |
-| `is_passed` | Int64 | Cờ đạt: `1` khi điểm $\ge 70\%$ (đúng $\ge 14/20$ câu), `0` khi trượt. |
-
----
-
-### 3.3 Các Bảng Tổng Hợp Tính Sẵn (Aggregate Feeds)
-
-#### `gold.agg_monthly_revenue`
-* **Engine:** `SummingMergeTree() ORDER BY month`.
-* **Mục đích:** Phục vụ tức thì các báo cáo tài chính hàng tháng với độ trễ dưới 4 ms.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `month` | Int64 | Khóa tháng định dạng số nguyên YYYYMM (ví dụ: `202405`). |
-| `gmv` | Int64 | Tổng giá trị giao dịch gộp trước giảm giá trong tháng ($\sum \text{original\_vnd}$). |
-| `discount_vnd` | Int64 | Tổng số tiền đã chiết khấu giảm giá trong tháng. |
-| `refund_vnd` | Int64 | Tổng số tiền đã hoàn trả cho học viên trong tháng. |
-| `net_vnd` | Int64 | Doanh thu thuần thực tế giữ lại của tháng. |
-| `refunds` | Int64 | Tổng số giao dịch bị hoàn tiền trong tháng. |
-| `payments` | Int64 | Tổng số giao dịch thanh toán phát sinh trong tháng. |
-
----
-
-#### `gold.agg_course_completion`
-* **Engine:** `SummingMergeTree() ORDER BY course_sk`.
-* **Mục đích:** Đánh giá hiệu quả đào tạo và tỷ lệ hoàn thành theo từng khóa học.
-
-| Tên cột | Kiểu dữ liệu | Ý nghĩa nghiệp vụ |
-| :--- | :--- | :--- |
-| `course_sk` | Int64 | Khóa thay thế của khóa học. |
-| `enrollments` | Int64 | Tổng số lượt học viên đã ghi danh vào khóa học. |
-| `completions` | Int64 | Số lượng học viên đã hoàn thành xuất sắc đủ 10 bài giảng. |
-| `completion_days` | Int64 | Tổng số ngày học cần thiết để hoàn thành (dùng tính số ngày trung bình). |
+# Data dictionary
+
+Physical types are read from running schemas. Timestamps use UTC and money uses integer VND.
+Gold event timestamps have second precision. The quality gate verifies Gold foreign keys.
+See [architecture](architecture.md) for grain and history, and [mapping](mapping.md) for formulas.
+Regenerate with `docker compose run --rm runner python -m docs.generate_dictionary`.
+
+## PostgreSQL learning_oltp.oltp.change_journal
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| revision | bigint | NO | Per-change revision used to reject stale replay. |
+| source_xid | bigint | NO | Full transaction ID of the source transaction recorded in the journal. |
+| table_name | text | NO | Source table name from the warehouse contract. |
+| source_id | bigint | NO | Business key of the source row. |
+| operation | text | NO | INSERT, UPDATE, DELETE or a durable staged-delta operation. |
+| raw_payload | jsonb | NO | Original JSON payload retained for replay or investigation. |
+| changed_at | timestamp with time zone | NO | UTC time at which the source trigger recorded the change. |
+## PostgreSQL learning_oltp.oltp.courses
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| course_id | bigint | NO | Course business key. |
+| instructor_id | bigint | NO | Instructor business key. |
+| title | text | NO | Course, lesson or quiz title, depending on the table. |
+| category | text | NO | Course category: Data, Programming, Business, Design or Language. |
+| difficulty | text | NO | beginner, intermediate or advanced. |
+| price_vnd | bigint | NO | Current course list price, nonnegative integer VND; not historical payment revenue. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.enrollments
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| enrollment_id | bigint | NO | Enrollment business key; retained as a reference on activity facts. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| course_id | bigint | NO | Course business key. |
+| enrolled_at | timestamp without time zone | NO | UTC enrollment time; learner history is selected at this instant. |
+| completed_at | timestamp without time zone | YES | UTC completion; nullable for incomplete enrollments, required for lesson completions. |
+| lessons_completed | smallint | NO | Current enrollment progress; not a daily historical progress series. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.instructors
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| instructor_id | bigint | NO | Instructor business key. |
+| full_name | text | NO | Synthetic Faker name; surrounding whitespace is trimmed in Silver. |
+| expertise | text | NO | Synthetic instructor specialization. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.lesson_completions
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| completion_id | bigint | NO | Lesson completion event key; enrollment and lesson identify one completion. |
+| enrollment_id | bigint | NO | Enrollment business key; retained as a reference on activity facts. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| course_id | bigint | NO | Course business key. |
+| lesson_id | bigint | NO | Lesson business key; the generator creates ten lessons per course. |
+| completed_at | timestamp without time zone | NO | UTC completion; nullable for incomplete enrollments, required for lesson completions. |
+| time_spent_seconds | integer | NO | Positive time spent on a lesson completion or quiz attempt, in seconds. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.lessons
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| lesson_id | bigint | NO | Lesson business key; the generator creates ten lessons per course. |
+| course_id | bigint | NO | Course business key. |
+| title | text | NO | Course, lesson or quiz title, depending on the table. |
+| position | smallint | NO | Lesson order inside its course, 1 through 10 in the generator. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.payment_methods
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| method_id | bigint | NO | Payment method business key. |
+| method_name | text | NO | bank_transfer, card or wallet. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.payments
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| payment_id | bigint | NO | Payment business key; the generator creates one payment per enrollment. |
+| enrollment_id | bigint | NO | Enrollment business key; retained as a reference on activity facts. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| course_id | bigint | NO | Course business key. |
+| method_id | bigint | NO | Payment method business key. |
+| transaction_id | text | NO | Unique transaction reference retained on the payment fact. |
+| paid_at | timestamp without time zone | NO | UTC payment time; generated as enrollment time plus 60 seconds. |
+| original_vnd | bigint | NO | Original amount recorded on the transaction, integer VND. |
+| discount_vnd | bigint | NO | Discount in integer VND, between zero and the original amount. |
+| charged_vnd | bigint | NO | Charged amount before refunds: original_vnd minus discount_vnd. |
+| refunded | smallint | NO | Full-refund flag, 0 or 1. No separate refund event timestamp exists. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.quiz_attempts
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| attempt_id | bigint | NO | Quiz attempt event key. |
+| enrollment_id | bigint | NO | Enrollment business key; retained as a reference on activity facts. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| course_id | bigint | NO | Course business key. |
+| quiz_id | bigint | NO | Quiz business key; the generator creates one quiz per course. |
+| attempt_number | smallint | NO | Attempt sequence within an enrollment and quiz. |
+| attempted_at | timestamp without time zone | NO | UTC quiz attempt time. |
+| correct_count | smallint | NO | Correct answers, from zero through total_questions. |
+| total_questions | smallint | NO | Number of questions; generated quizzes and attempts contain 20. |
+| time_spent_seconds | integer | NO | Positive time spent on a lesson completion or quiz attempt, in seconds. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.quizzes
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| quiz_id | bigint | NO | Quiz business key; the generator creates one quiz per course. |
+| course_id | bigint | NO | Course business key. |
+| title | text | NO | Course, lesson or quiz title, depending on the table. |
+| total_questions | smallint | NO | Number of questions; generated quizzes and attempts contain 20. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.user_history
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| history_id | bigint | NO | Source history version key; one learner can have several versions. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| full_name | text | NO | Synthetic Faker name; surrounding whitespace is trimmed in Silver. |
+| email | text | NO | Synthetic example.invalid address; Silver trims and lowercases it. |
+| city | text | NO | City at the applicable history version; see user_history and dim_user. |
+| country | character | NO | Country code; the generator uses VN. Silver uppercases the value. |
+| valid_from | timestamp without time zone | NO | Inclusive start of the SCD2 effective interval, in UTC. |
+| valid_to | timestamp without time zone | NO | Exclusive end of the SCD2 interval; 2100-01-01 denotes the current version. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL learning_oltp.oltp.users
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| full_name | text | NO | Synthetic Faker name; surrounding whitespace is trimmed in Silver. |
+| email | text | NO | Synthetic example.invalid address; Silver trims and lowercases it. |
+| city | text | NO | City at the applicable history version; see user_history and dim_user. |
+| country | character | NO | Country code; the generator uses VN. Silver uppercases the value. |
+| created_at | timestamp without time zone | NO | UTC creation time; generated learners start in 2022. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+| dw_revision | bigint | NO | Monotonic source revision; zero identifies the baseline seed or migrated data. |
+## PostgreSQL dwh_staging.quarantine.quarantine_records
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| table_name | text | NO | Source table name from the warehouse contract. |
+| source_id | bigint | NO | Business key of the source row. |
+| source_updated_at | timestamp with time zone | NO | Source updated_at value of the rejected version. |
+| error_code | text | NO | Machine-readable schema, domain or reference error code. |
+| rejection_reason | text | NO | Human-readable explanation of the rejected change. |
+| detected_at | timestamp with time zone | YES | UTC time at which staging detected the invalid change. |
+| raw_payload | jsonb | NO | Original JSON payload retained for replay or investigation. |
+| resolved_at | timestamp with time zone | YES | UTC resolution time; NULL while the rejection remains unresolved. |
+## PostgreSQL dwh_staging.silver.courses
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| course_id | bigint | NO | Course business key. |
+| instructor_id | bigint | NO | Instructor business key. |
+| title | text | NO | Course, lesson or quiz title, depending on the table. |
+| category | text | NO | Course category: Data, Programming, Business, Design or Language. |
+| difficulty | text | NO | beginner, intermediate or advanced. |
+| price_vnd | bigint | NO | Current course list price, nonnegative integer VND; not historical payment revenue. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.enrollments
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| enrollment_id | bigint | NO | Enrollment business key; retained as a reference on activity facts. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| course_id | bigint | NO | Course business key. |
+| enrolled_at | timestamp without time zone | NO | UTC enrollment time; learner history is selected at this instant. |
+| completed_at | timestamp without time zone | YES | UTC completion; nullable for incomplete enrollments, required for lesson completions. |
+| lessons_completed | bigint | NO | Current enrollment progress; not a daily historical progress series. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.instructors
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| instructor_id | bigint | NO | Instructor business key. |
+| full_name | text | NO | Synthetic Faker name; surrounding whitespace is trimmed in Silver. |
+| expertise | text | NO | Synthetic instructor specialization. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.lesson_completions
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| completion_id | bigint | NO | Lesson completion event key; enrollment and lesson identify one completion. |
+| enrollment_id | bigint | NO | Enrollment business key; retained as a reference on activity facts. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| course_id | bigint | NO | Course business key. |
+| lesson_id | bigint | NO | Lesson business key; the generator creates ten lessons per course. |
+| completed_at | timestamp without time zone | NO | UTC completion; nullable for incomplete enrollments, required for lesson completions. |
+| time_spent_seconds | bigint | NO | Positive time spent on a lesson completion or quiz attempt, in seconds. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.lessons
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| lesson_id | bigint | NO | Lesson business key; the generator creates ten lessons per course. |
+| course_id | bigint | NO | Course business key. |
+| title | text | NO | Course, lesson or quiz title, depending on the table. |
+| position | bigint | NO | Lesson order inside its course, 1 through 10 in the generator. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.payment_methods
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| method_id | bigint | NO | Payment method business key. |
+| method_name | text | NO | bank_transfer, card or wallet. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.payments
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| payment_id | bigint | NO | Payment business key; the generator creates one payment per enrollment. |
+| enrollment_id | bigint | NO | Enrollment business key; retained as a reference on activity facts. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| course_id | bigint | NO | Course business key. |
+| method_id | bigint | NO | Payment method business key. |
+| transaction_id | text | NO | Unique transaction reference retained on the payment fact. |
+| paid_at | timestamp without time zone | NO | UTC payment time; generated as enrollment time plus 60 seconds. |
+| original_vnd | bigint | NO | Original amount recorded on the transaction, integer VND. |
+| discount_vnd | bigint | NO | Discount in integer VND, between zero and the original amount. |
+| charged_vnd | bigint | NO | Charged amount before refunds: original_vnd minus discount_vnd. |
+| refunded | bigint | NO | Full-refund flag, 0 or 1. No separate refund event timestamp exists. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.quiz_attempts
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| attempt_id | bigint | NO | Quiz attempt event key. |
+| enrollment_id | bigint | NO | Enrollment business key; retained as a reference on activity facts. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| course_id | bigint | NO | Course business key. |
+| quiz_id | bigint | NO | Quiz business key; the generator creates one quiz per course. |
+| attempt_number | bigint | NO | Attempt sequence within an enrollment and quiz. |
+| attempted_at | timestamp without time zone | NO | UTC quiz attempt time. |
+| correct_count | bigint | NO | Correct answers, from zero through total_questions. |
+| total_questions | bigint | NO | Number of questions; generated quizzes and attempts contain 20. |
+| time_spent_seconds | bigint | NO | Positive time spent on a lesson completion or quiz attempt, in seconds. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.quizzes
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| quiz_id | bigint | NO | Quiz business key; the generator creates one quiz per course. |
+| course_id | bigint | NO | Course business key. |
+| title | text | NO | Course, lesson or quiz title, depending on the table. |
+| total_questions | bigint | NO | Number of questions; generated quizzes and attempts contain 20. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.user_history
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| history_id | bigint | NO | Source history version key; one learner can have several versions. |
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| full_name | text | NO | Synthetic Faker name; surrounding whitespace is trimmed in Silver. |
+| email | text | NO | Synthetic example.invalid address; Silver trims and lowercases it. |
+| city | text | NO | City at the applicable history version; see user_history and dim_user. |
+| country | text | NO | Country code; the generator uses VN. Silver uppercases the value. |
+| valid_from | timestamp without time zone | NO | Inclusive start of the SCD2 effective interval, in UTC. |
+| valid_to | timestamp without time zone | NO | Exclusive end of the SCD2 interval; 2100-01-01 denotes the current version. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.silver.users
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| user_id | bigint | NO | Learner business key. Use it to count distinct people across SCD versions. |
+| full_name | text | NO | Synthetic Faker name; surrounding whitespace is trimmed in Silver. |
+| email | text | NO | Synthetic example.invalid address; Silver trims and lowercases it. |
+| city | text | NO | City at the applicable history version; see user_history and dim_user. |
+| country | text | NO | Country code; the generator uses VN. Silver uppercases the value. |
+| created_at | timestamp without time zone | NO | UTC creation time; generated learners start in 2022. |
+| updated_at | timestamp with time zone | NO | UTC source-version timestamp, updated by the source trigger. |
+## PostgreSQL dwh_staging.staging.etl_watermarks
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| table_name | text | NO | Source table name from the warehouse contract. |
+| last_processed_time | timestamp with time zone | NO | Informational timestamp, not the authoritative journal checkpoint. |
+| last_processed_id | bigint | NO | Business key accompanying the informational timestamp. |
+| last_run_id | text | NO | Publication run that confirmed the informational watermark. |
+## PostgreSQL dwh_staging.staging.pending_changes
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| table_name | text | NO | Source table name from the warehouse contract. |
+| source_id | bigint | NO | Business key of the source row. |
+| operation | text | NO | INSERT, UPDATE, DELETE or a durable staged-delta operation. |
+| revision | bigint | NO | Per-change revision used to reject stale replay. |
+## PostgreSQL dwh_staging.staging.pipeline_runs
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| run_id | text | NO | Pipeline run UUID. |
+| phase | text | NO | extracting, building, publishing, completed, failed or recovered. |
+| manifest | jsonb | NO | Run metadata with counts, fingerprints, checks and measurements. |
+| publication | jsonb | YES | Durable per-table old/new UUID plan used for recovery. |
+| started_at | timestamp with time zone | NO | UTC run start time. |
+| finished_at | timestamp with time zone | YES | UTC completion or failure time. |
+## PostgreSQL dwh_staging.staging.published_state
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| singleton | boolean | NO | Single-row boolean key; always true. |
+| manifest | jsonb | NO | Run metadata with counts, fingerprints, checks and measurements. |
+| safe_xid | bigint | YES | Source transaction checkpoint for the next journal read. |
+| published_at | timestamp with time zone | NO | UTC time authoritative publication state was committed. |
+## PostgreSQL dwh_staging.staging.source_versions
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| table_name | text | NO | Source table name from the warehouse contract. |
+| source_id | bigint | NO | Business key of the source row. |
+| revision | bigint | NO | Per-change revision used to reject stale replay. |
+## PostgreSQL dwh_staging.staging.stage_state
+
+| Column | Type | Nullable | Meaning |
+|---|---|---|---|
+| singleton | boolean | NO | Single-row boolean key; always true. |
+| needs_full | boolean | NO | A committed full stage still requires a complete Gold rebuild. |
+
+## ClickHouse gold.dim_course
+
+| Column | Type | Meaning |
+|---|---|---|
+| course_sk | Int64 | Course surrogate key: course_id plus 1000000. |
+| course_id | Int64 | Course business key. |
+| title | String | Course, lesson or quiz title, depending on the table. |
+| category | LowCardinality(String) | Course category: Data, Programming, Business, Design or Language. |
+| difficulty | LowCardinality(String) | beginner, intermediate or advanced. |
+| instructor_id | Int64 | Instructor business key. |
+| price_vnd | Int64 | Current course list price, nonnegative integer VND; not historical payment revenue. |
+
+## ClickHouse gold.dim_date
+
+| Column | Type | Meaning |
+|---|---|---|
+| date_sk | Int64 | Calendar key YYYYMMDD; zero is the unknown date row. |
+| full_date | Date | Calendar day. 1970-01-01 is used only for the unknown row. |
+| year | Int64 | Calendar year; zero for the unknown date. |
+| quarter | Int64 | Quarter 1 through 4; zero for the unknown date. |
+| month | Int64 | Calendar month in dim_date; YYYYMM in the monthly revenue aggregate. |
+| day | Int64 | Day of month; zero for the unknown date. |
+
+## ClickHouse gold.dim_instructor
+
+| Column | Type | Meaning |
+|---|---|---|
+| instructor_sk | Int64 | Instructor surrogate key: instructor_id plus 2000000. |
+| instructor_id | Int64 | Instructor business key. |
+| full_name | String | Synthetic Faker name; surrounding whitespace is trimmed in Silver. |
+| expertise | LowCardinality(String) | Synthetic instructor specialization. |
+
+## ClickHouse gold.dim_lesson
+
+| Column | Type | Meaning |
+|---|---|---|
+| lesson_sk | Int64 | Lesson surrogate key: lesson_id plus 3000000. |
+| lesson_id | Int64 | Lesson business key; the generator creates ten lessons per course. |
+| course_id | Int64 | Course business key. |
+| title | String | Course, lesson or quiz title, depending on the table. |
+| position | Int64 | Lesson order inside its course, 1 through 10 in the generator. |
+
+## ClickHouse gold.dim_payment_method
+
+| Column | Type | Meaning |
+|---|---|---|
+| method_sk | Int64 | Payment method surrogate key: method_id plus 5000000. |
+| method_id | Int64 | Payment method business key. |
+| method_name | LowCardinality(String) | bank_transfer, card or wallet. |
+
+## ClickHouse gold.dim_quiz
+
+| Column | Type | Meaning |
+|---|---|---|
+| quiz_sk | Int64 | Quiz surrogate key: quiz_id plus 4000000. |
+| quiz_id | Int64 | Quiz business key; the generator creates one quiz per course. |
+| course_id | Int64 | Course business key. |
+| title | String | Course, lesson or quiz title, depending on the table. |
+| total_questions | Int64 | Number of questions; generated quizzes and attempts contain 20. |
+
+## ClickHouse gold.dim_user
+
+| Column | Type | Meaning |
+|---|---|---|
+| user_sk | Int64 | SCD2 version surrogate key: history_id plus 10000000. |
+| user_id | Int64 | Learner business key. Use it to count distinct people across SCD versions. |
+| full_name | String | Synthetic Faker name; surrounding whitespace is trimmed in Silver. |
+| email | String | Synthetic example.invalid address; Silver trims and lowercases it. |
+| city | LowCardinality(String) | City at the applicable history version; see user_history and dim_user. |
+| country | LowCardinality(String) | Country code; the generator uses VN. Silver uppercases the value. |
+| valid_from | DateTime('UTC') | Inclusive start of the SCD2 effective interval, in UTC. |
+| valid_to | DateTime('UTC') | Exclusive end of the SCD2 interval; 2100-01-01 denotes the current version. |
+| is_current | Int64 | 1 for the current history version, otherwise 0. |
+
+## ClickHouse gold.fact_enrollments
+
+| Column | Type | Meaning |
+|---|---|---|
+| enrollment_id | Int64 | Enrollment business key; retained as a reference on activity facts. |
+| user_sk | Int64 | SCD2 version surrogate key: history_id plus 10000000. |
+| course_sk | Int64 | Course surrogate key: course_id plus 1000000. |
+| instructor_sk | Int64 | Instructor surrogate key: instructor_id plus 2000000. |
+| enrolled_date_sk | Int64 | Enrollment-date role of dim_date, derived from enrolled_at. |
+| completed_date_sk | Int64 | Completion-date role of dim_date; zero for incomplete enrollments. |
+| enrolled_at | DateTime('UTC') | UTC enrollment time; learner history is selected at this instant. |
+| completed_at | Nullable(DateTime('UTC')) | UTC completion; nullable for incomplete enrollments, required for lesson completions. |
+| lessons_completed | Int64 | Current enrollment progress; not a daily historical progress series. |
+| is_completed | Int64 | 1 when the enrollment has completed_at; completion-rate numerator. |
+| updated_at | DateTime64(6, 'UTC') | UTC source-version timestamp, updated by the source trigger. |
+
+## ClickHouse gold.fact_lesson_completions
+
+| Column | Type | Meaning |
+|---|---|---|
+| completion_id | Int64 | Lesson completion event key; enrollment and lesson identify one completion. |
+| enrollment_id | Int64 | Enrollment business key; retained as a reference on activity facts. |
+| user_sk | Int64 | SCD2 version surrogate key: history_id plus 10000000. |
+| course_sk | Int64 | Course surrogate key: course_id plus 1000000. |
+| lesson_sk | Int64 | Lesson surrogate key: lesson_id plus 3000000. |
+| date_sk | Int64 | Calendar key YYYYMMDD; zero is the unknown date row. |
+| completed_at | DateTime('UTC') | UTC completion; nullable for incomplete enrollments, required for lesson completions. |
+| time_spent_seconds | Int64 | Positive time spent on a lesson completion or quiz attempt, in seconds. |
+
+## ClickHouse gold.fact_payments
+
+| Column | Type | Meaning |
+|---|---|---|
+| payment_id | Int64 | Payment business key; the generator creates one payment per enrollment. |
+| enrollment_id | Int64 | Enrollment business key; retained as a reference on activity facts. |
+| transaction_id | String | Unique transaction reference retained on the payment fact. |
+| user_sk | Int64 | SCD2 version surrogate key: history_id plus 10000000. |
+| course_sk | Int64 | Course surrogate key: course_id plus 1000000. |
+| instructor_sk | Int64 | Instructor surrogate key: instructor_id plus 2000000. |
+| method_sk | Int64 | Payment method surrogate key: method_id plus 5000000. |
+| date_sk | Int64 | Calendar key YYYYMMDD; zero is the unknown date row. |
+| paid_at | DateTime('UTC') | UTC payment time; generated as enrollment time plus 60 seconds. |
+| original_vnd | Int64 | Original amount recorded on the transaction, integer VND. |
+| discount_vnd | Int64 | Discount in integer VND, between zero and the original amount. |
+| charged_vnd | Int64 | Charged amount before refunds: original_vnd minus discount_vnd. |
+| refunded | Int64 | Full-refund flag, 0 or 1. No separate refund event timestamp exists. |
+| net_vnd | Int64 | Retained revenue: charged_vnd times (1-refunded), on the original payment date. |
+
+## ClickHouse gold.fact_quiz_attempts
+
+| Column | Type | Meaning |
+|---|---|---|
+| attempt_id | Int64 | Quiz attempt event key. |
+| enrollment_id | Int64 | Enrollment business key; retained as a reference on activity facts. |
+| user_sk | Int64 | SCD2 version surrogate key: history_id plus 10000000. |
+| course_sk | Int64 | Course surrogate key: course_id plus 1000000. |
+| quiz_sk | Int64 | Quiz surrogate key: quiz_id plus 4000000. |
+| date_sk | Int64 | Calendar key YYYYMMDD; zero is the unknown date row. |
+| attempted_at | DateTime('UTC') | UTC quiz attempt time. |
+| attempt_number | Int64 | Attempt sequence within an enrollment and quiz. |
+| correct_count | Int64 | Correct answers, from zero through total_questions. |
+| total_questions | Int64 | Number of questions; generated quizzes and attempts contain 20. |
+| time_spent_seconds | Int64 | Positive time spent on a lesson completion or quiz attempt, in seconds. |
+| is_passed | Int64 | 1 when correct answers divided by questions is at least 70 percent. |
+
+## ClickHouse gold.feed_course_completion
+
+| Column | Type | Meaning |
+|---|---|---|
+| course_sk | Int64 | Course surrogate key: course_id plus 1000000. |
+| enrollments | UInt64 | Number of enrollments in the aggregate group. |
+| completions | Int64 | Number of enrollments with completed_at in the group. |
+| completion_days | Int64 | Sum of completed enrollment durations, in days. |
+
+## ClickHouse gold.feed_monthly_revenue
+
+| Column | Type | Meaning |
+|---|---|---|
+| month | UInt32 | Calendar month in dim_date; YYYYMM in the monthly revenue aggregate. |
+| net_vnd | Int64 | Retained revenue: charged_vnd times (1-refunded), on the original payment date. |
+| gmv | Int64 | Sum of original amounts before discounts and refunds, in VND. |
+| discount_vnd | Int64 | Discount in integer VND, between zero and the original amount. |
+| refund_vnd | Int64 | Sum of fully refunded charged amounts, in VND. |
+| refunds | Int64 | Number of fully refunded transactions in the aggregate group. |
+| payments | UInt64 | Number of payment transactions in the aggregate group. |
+
+## ClickHouse gold.mv_course_completion_stats
+
+| Column | Type | Meaning |
+|---|---|---|
+| course_sk | Int64 | Course surrogate key: course_id plus 1000000. |
+| enrollments | UInt64 | Number of enrollments in the aggregate group. |
+| completions | Int64 | Number of enrollments with completed_at in the group. |
+| completion_days | Int64 | Sum of completed enrollment durations, in days. |
+
+## ClickHouse gold.mv_monthly_revenue_summary
+
+| Column | Type | Meaning |
+|---|---|---|
+| month | UInt32 | Calendar month in dim_date; YYYYMM in the monthly revenue aggregate. |
+| net_vnd | Int64 | Retained revenue: charged_vnd times (1-refunded), on the original payment date. |
+| gmv | Int64 | Sum of original amounts before discounts and refunds, in VND. |
+| discount_vnd | Int64 | Discount in integer VND, between zero and the original amount. |
+| refund_vnd | Int64 | Sum of fully refunded charged amounts, in VND. |
+| refunds | Int64 | Number of fully refunded transactions in the aggregate group. |
+| payments | UInt64 | Number of payment transactions in the aggregate group. |

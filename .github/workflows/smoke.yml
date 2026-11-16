@@ -1,0 +1,52 @@
+name: Warehouse checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+concurrency:
+  group: warehouse-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  static:
+    name: Lint and offline unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements.lock.txt
+            demo/requirements.lock.txt
+            requirements-dev.txt
+      - run: python -m pip install -r requirements.lock.txt -r demo/requirements.lock.txt -r requirements-dev.txt
+      - run: python -m pip check
+      - run: python scripts/check.py --fail-on-skip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-checks
+          path: artifacts/code-checks.json
+          if-no-files-found: warn
+  smoke:
+    name: Fresh-volume integration and recovery
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DW_CPUS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/verify.py --project learning-dw-smoke-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-warehouse-evidence
+          path: artifacts/verification/
+          if-no-files-found: warn
+          retention-days: 14
+

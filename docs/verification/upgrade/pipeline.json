@@ -1,0 +1,143 @@
+{
+  "run_id": "a824d729f8ca46408c99d8d4694ec267",
+  "status": "success",
+  "mode": "incremental",
+  "started_at": "2026-11-15T01:51:28.923435+00:00",
+  "version": 3,
+  "recovered_runs": [],
+  "tables": {
+    "users": 500,
+    "user_history": 600,
+    "instructors": 100,
+    "courses": 1000,
+    "lessons": 10000,
+    "quizzes": 1000,
+    "payment_methods": 3,
+    "enrollments": 5000,
+    "payments": 5000,
+    "lesson_completions": 36000,
+    "quiz_attempts": 9998
+  },
+  "extracted": {
+    "users": 0,
+    "user_history": 0,
+    "instructors": 0,
+    "courses": 0,
+    "lessons": 0,
+    "quizzes": 0,
+    "payment_methods": 0,
+    "enrollments": 0,
+    "payments": 0,
+    "lesson_completions": 0,
+    "quiz_attempts": 1
+  },
+  "changed": {
+    "users": 0,
+    "user_history": 0,
+    "instructors": 0,
+    "courses": 0,
+    "lessons": 0,
+    "quizzes": 0,
+    "payment_methods": 0,
+    "enrollments": 0,
+    "payments": 0,
+    "lesson_completions": 0,
+    "quiz_attempts": 0
+  },
+  "rejected": {
+    "users": 0,
+    "user_history": 0,
+    "instructors": 0,
+    "courses": 0,
+    "lessons": 0,
+    "quizzes": 0,
+    "payment_methods": 0,
+    "enrollments": 0,
+    "payments": 0,
+    "lesson_completions": 0,
+    "quiz_attempts": 0
+  },
+  "pending": {},
+  "deleted": [],
+  "safe_xid": 941,
+  "previous_gold_intact": true,
+  "fingerprints": {
+    "dim_date": [
+      1097,
+      4266302967812554063,
+      3457102935963817141
+    ],
+    "dim_quiz": [
+      1000,
+      3482977383733368888,
+      4762157269550898450
+    ],
+    "dim_user": [
+      600,
+      3245881799409946994,
+      10383801821861318896
+    ],
+    "dim_course": [
+      1000,
+      17615690815470640409,
+      17064653644763978881
+    ],
+    "dim_lesson": [
+      10000,
+      10321938275860252929,
+      16724422471828246073
+    ],
+    "fact_payments": [
+      5000,
+      18108203711243806709,
+      11160889012865126685
+    ],
+    "dim_instructor": [
+      100,
+      10307622326605069600,
+      18019395054955890064
+    ],
+    "fact_enrollments": [
+      5000,
+      5971588035395063330,
+      13172141117537199098
+    ],
+    "dim_payment_method": [
+      3,
+      14358454978583287048,
+      4048812240518748982
+    ],
+    "fact_quiz_attempts": [
+      9998,
+      3555279481079777142,
+      9437288408251536480
+    ],
+    "fact_lesson_completions": [
+      36000,
+      13630840709698377001,
+      3909792202835616135
+    ]
+  },
+  "quality_checks": 123,
+  "quality_checked_at": "2026-11-15T01:51:27.974588+00:00",
+  "gold_uuids": {
+    "dim_date": "6cab104d-453c-45fe-bacc-1c2ae2b489b0",
+    "dim_quiz": "456282a8-a9d7-4c7c-899c-2dc09dedb5a8",
+    "dim_user": "23708a11-5f47-446d-a7fc-f96c5068c869",
+    "dim_course": "2f86cb0f-1cc4-434c-bc8d-617ce9aa6e81",
+    "dim_lesson": "edd134f4-be0b-45db-b0e8-ed5ad73b307a",
+    "fact_payments": "25b0e3ed-6221-401f-ba22-42aaa80f56c6",
+    "dim_instructor": "7f331c2f-5bfd-4a55-b954-2d7f486d85fc",
+    "fact_enrollments": "c4f48c92-871f-48d6-8d85-9158c80a21cb",
+    "dim_payment_method": "a34e6032-d513-46b4-bb16-1b7f6816e9e9",
+    "fact_quiz_attempts": "2afd63d8-ef45-4987-89cb-52cc75a24c29",
+    "fact_lesson_completions": "2930fa49-8d32-4b47-af35-21aa27fcbae8",
+    "mv_course_completion_stats": "8c887965-014d-4dfc-b210-4f405ec1bb28",
+    "mv_monthly_revenue_summary": "4ce4f2be-c4dc-4da3-ae38-67dcef09af8d"
+  },
+  "gold_reused": true,
+  "fact_actions": {},
+  "finished_at": "2026-11-15T01:51:29.420543+00:00",
+  "seconds": 0.497,
+  "peak_rss_mib": 146.99
+}
