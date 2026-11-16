@@ -7,9 +7,11 @@
 # ==============================================================================
 cd /run/media/tamdae/04C8A69DC8A68C8C/Users/LENOVO/Documents/TL_Kỳ_1_năm_4/Data_Warehouse/rebuild
 
-# Khởi động PostgreSQL và ClickHouse
+# 0.1 Khởi động các container PostgreSQL và ClickHouse
 docker compose up -d --wait postgres clickhouse
-docker compose build runner
+
+# 0.2 Build image runner và dashboard
+docker compose build runner dashboard
 
 # ==============================================================================
 # BƯỚC 1: TRUY CẬP TRỰC TIẾP VÀO CÁC SERVICE ĐỂ XEM BẢNG & SCHEMA
@@ -33,7 +35,7 @@ docker compose build runner
 docker compose run --rm runner python cli.py setup
 docker compose run --rm runner python cli.py generate --enrollments 500000 --seed 2024
 
-# 2.2 Đếm dòng trên 8 bảng tác nghiệp nguồn (OLTP)
+# 2.2 Thống kê số dòng trên các bảng tác nghiệp nguồn (OLTP)
 docker compose exec postgres psql -U learning -d learning_oltp -c "
 SELECT table_name, to_char(reltuples::bigint, '999,999,999') AS estimated_rows
 FROM information_schema.tables t
@@ -42,24 +44,18 @@ WHERE table_schema = 'oltp'
 ORDER BY reltuples DESC;
 "
 
-```bash
-docker exec -it online-learning-dw-postgres-1 psql -U learning -d postgres
-\c dwh_staging
-\dn
-select * from quarantine.quarantine_records limit 1;
-select * from quarantine.quarantine_records limit 1;
-]]]
-
-
 # 2.3 Nạp mẻ toàn phần ban đầu (Full Load)
 docker compose run --rm runner python cli.py pipeline --mode full
 
-# 2.4 Xem mốc phân thủy (Watermark) ban đầu trong PostgreSQL Staging
+# 2.4 Xem mốc Watermark ban đầu trong PostgreSQL Staging
 docker compose exec postgres psql -U learning_stage -d dwh_staging -c "
 SELECT table_name, last_processed_time, last_processed_id, last_run_id 
 FROM staging.etl_watermarks 
 ORDER BY table_name;
 "
+
+# 2.5 Kiểm tra sức khỏe toàn diện hệ thống (Doctor Diagnostics)
+docker compose run --rm runner python cli.py doctor
 
 # ==============================================================================
 # BƯỚC 3: THỰC NGHIỆM ĐỢT 1 (BATCH 1 - NẠP AN TOÀN 100 BẢN GHI/BẢNG)
@@ -136,7 +132,7 @@ docker compose exec clickhouse clickhouse-client -u learning --password local_le
 # ==============================================================================
 # BƯỚC 6: CHẠY TRỰC TIẾP 7 TRUY VẤN PHÂN TÍCH (Q1 - Q7) TRONG CLICKHOUSE
 # ==============================================================================
-# Mở ClickHouse Client để paste các câu truy vấn:
+# Mở ClickHouse Client để thực thi các câu truy vấn:
 # docker compose exec -it clickhouse clickhouse-client -u learning --password local_learning_demo -d gold
 
 # Hoặc chạy nhanh từng câu từ Terminal:
@@ -189,12 +185,12 @@ GROUP BY CUBE(d.year, CAST(c.category AS String)) ORDER BY d.year, category;
 
 # Q6: Fact-to-Fact Drill Across (Doanh thu vs Ghi danh)
 docker compose exec clickhouse clickhouse-client -u learning --password local_learning_demo -d gold --query "
-WITH revenue AS( SELECT course_sk, sum(net_vnd) AS net_vnd FROM gold.fact_payments  GROUP BY course_sk),
+WITH revenue AS( SELECT course_sk, sum(net_vnd) AS net_vnd FROM gold.fact_payments GROUP BY course_sk),
     enrollment AS(SELECT course_sk, count(*) AS total_enrollments FROM gold.fact_enrollments GROUP BY course_sk)
 SELECT c.course_id, c.title, c.category, coalesce(r.net_vnd, 0) AS revenue, coalesce(e.total_enrollments, 0) AS enrollments
 FROM gold.dim_course AS c LEFT JOIN revenue AS r ON c.course_sk = r.course_sk
 LEFT JOIN enrollment AS e ON c.course_sk = e.course_sk
-ORDER BY revenue DESC LIMIT 10
+ORDER BY revenue DESC LIMIT 10;
 "
 
 # Q7: Quét toàn bảng 3.6 triệu bản ghi học bài & Đếm học viên duy nhất
@@ -206,7 +202,40 @@ GROUP BY c.category ORDER BY total_completions DESC;
 "
 
 # ==============================================================================
-# BƯỚC 7: DỌN DẸP
+# BƯỚC 7: KHỞI ĐỘNG VÀ KHÁM PHÁ DASHBOARD STREAMLIT (PORTAL PHÂN TÍCH)
 # ==============================================================================
+# 7.1 Khởi động dịch vụ Dashboard trên cổng 8501
+docker compose --profile demo up -d --wait dashboard
+
+# 7.2 Mở trình duyệt Web tại địa chỉ:
+# http://localhost:8501
+
+# 7.3 Các tab chức năng trên Dashboard:
+# - Overview: Tổng quan doanh thu, lượt ghi danh, bài học hoàn thành, lượt thi quiz
+# - Finance: Phân tích doanh thu thuần, chiết khấu, tỷ lệ hoàn tiền theo kênh & giảng viên
+# - Learning: Tỷ lệ hoàn thành theo khóa học, phân bố thời gian học tập thực tế
+# - Quizzes: Đánh giá chất lượng đề thi, tỷ lệ đỗ (pass rate), số lần thử lại
+# - Markets: Phân bố học viên theo thành phố/quốc gia theo lịch sử SCD Type 2
+# - Quality & Operations: Trạng thái 116 chỉ tiêu kiểm toán, nhật ký nạp, vùng Quarantine
+
+# ==============================================================================
+# BƯỚC 8: CHẠY BỘ KIỂM THỬ TỰ ĐỘNG & ĐO KIỂM BENCHMARK
+# ==============================================================================
+# 8.1 Xuất 10 báo cáo chiến lược ra file CSV
+docker compose run --rm runner python cli.py reports
+
+# 8.2 Chạy benchmark đo tốc độ ClickHouse vs PostgreSQL
+docker compose run --rm runner python cli.py benchmark --runs 5
+
+# 8.3 Chạy bộ kiểm thử toàn diện
+docker compose run --rm runner pytest tests/
+
+# ==============================================================================
+# BƯỚC 9: DỌN DẸP HẠ TẦNG KHI KẾT THÚC
+# ==============================================================================
+# Dừng container nhưng giữ lại dữ liệu volume:
+# docker compose --profile demo stop
+
+# Hoặc xóa sạch container & mạng (nếu muốn reset):
 # docker compose --profile demo down
 ```
