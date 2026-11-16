@@ -23,8 +23,14 @@ Cách sử dụng dòng lệnh:
 
 import argparse
 import csv
+import sys
 from pathlib import Path
 from contextlib import closing
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from etl.common import pg_connect
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
